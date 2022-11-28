@@ -12,8 +12,10 @@ TB_FOLDER=$(shell cd ./src; pwd)
 
 all: simple_dds
 
+lint_all: lint_simple_dds
+
 lint_simple_dds:
-	@verilator --lint-only --wall $(RTL_FOLDER)/simple_dds && echo "LINT: OK"
+	@verilator --lint-only --Wall $(RTL_FOLDER)/simple_dds && echo "LINT: OK"
 
 simple_dds:
 	@$(CC) -o ./run/simple_dds.tb $(TB_FOLDER)/simple_dds_tb.v $(RTL_FOLDER)/simple_dds.v;

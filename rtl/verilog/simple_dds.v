@@ -12,27 +12,25 @@ module simple_dds (/*AUTOARG*/
    // Outputs
    wb_dat_o, wb_ack_o, wave_o,
    // Inputs
-   wb_clk_i, wb_rst_i, wb_dat_i, wb_addr_i, wb_lock_i, wb_cyc_i, wb_we_i,
-   dds_clk_i
+   wb_clk_i, wb_rst_i, wb_dat_i, wb_addr_i, wb_we_i, wb_stb_i, dds_clk_i
    ) ;
    //------------------------------------------------------------------------------------------------------------------------
    // Parameters
    //------------------------------------------------------------------------------------------------------------------------
    parameter DATA_WIDTH = 32;
-   parameter ADDR_WIDTH = 5;
+   parameter ADDR_WIDTH = 16;
    parameter WAVE_WIDTH = 16;
 
-   //------------------------------------------------------------------------------------------------------------------------
+   //--------------------------------------------------------------------------------------------------------------------------------------------
    // I/O
-   //------------------------------------------------------------------------------------------------------------------------
+   //--------------------------------------------------------------------------------------------------------------------------------------------
    // Wishbone Interface Signals
    input wire wb_clk_i;
    input wire wb_rst_i;
    input wire [DATA_WIDTH-1:0] wb_dat_i;
    input wire [ADDR_WIDTH-1:0] wb_addr_i;
-   input wire                  wb_lock_i;
-   input wire                  wb_cyc_i;
    input wire                  wb_we_i;
+   input wire                  wb_stb_i;
 
    output wire [DATA_WIDTH-1:0] wb_dat_o;
    output wire                  wb_ack_o;
@@ -42,56 +40,74 @@ module simple_dds (/*AUTOARG*/
 
    output wire [WAVE_WIDTH-1:0] wave_o;
 
-   //------------------------------------------------------------------------------------------------------------------------
+   //--------------------------------------------------------------------------------------------------------------------------------------------
    // Internal Signals
-   //------------------------------------------------------------------------------------------------------------------------
-   // Register Map TODO move into reg_map
-   reg [DATA_WIDTH-1:0]         ready_r;
-   reg [DATA_WIDTH-1:0]         enable_r;
-   reg [DATA_WIDTH-1:0]         dds_src_r;
-   reg [DATA_WIDTH-1:0]         tuning_word_r;
-   reg [DATA_WIDTH-1:0]         gain_word_r;
-   reg [DATA_WIDTH-1:0]         offset_word_r;
-
+   //--------------------------------------------------------------------------------------------------------------------------------------------
    // Register Map Signals
-   wire [DATA_WIDTH-1:0]         reg_map [5:0];
-   wire                         map_wr_en;
-   wire [ADDR_WIDTH-1:0]        map_wr_addr;
-   wire [DATA_WIDTH-1:0]        map_wr_data;
+   // TODO add in the seeded version for lfsr
+   reg [DATA_WIDTH-1:0]         reg_map_r [5:0]; // Consult Spec for register map
 
-   // User memory signals
-   wire                         mem_wr_en;
-   wire [ADDR_WIDTH-1:0]        mem_wr_addr;
-   wire [DATA_WIDTH-1:0]        mem_wr_data;
+   // User RAM and LUTs
+   reg [7:0]                    user_ram_r [1023:0];
+   reg [7:0]                    sine_lut_r [1023:0];
+   reg [7:0]                    saw_lut_r [1023:0];
 
    // Registered output signals
    reg [DATA_WIDTH-1:0]        wb_dat_r;
    reg                         wb_ack_r;
    reg [WAVE_WIDTH-1:0]        wave_r;
 
-   //------------------------------------------------------------------------------------------------------------------------
+   // DDS Core signals
+   wire [7:0]                  dds_data;
+   wire [9:0]                   phase_addr;
+
+   // Random Number Generator Signals
+   wire [7:0]                   rand_num;
+
+   //--------------------------------------------------------------------------------------------------------------------------------------------
    // Module Instantiations
-   //------------------------------------------------------------------------------------------------------------------------
-   //   wb_interface #(.DATA_WIDTH(DATA_WIDTH), .ADDR_WIDTH(ADDR_WIDTH)) interface_0(.wb_clk_i(wb_clk_i), .wb_rst_i(wb_rst_i), .wb_dat_i(wb_dat_i),
-   //                                                                                .wb_addr_i(wb_addr_i), .wb_lock_i(wb_lock_i), .wb_cyc_i(wb_cyc_i),
-   //                                                                                .wb_we_i(wb_we_i),
-   //                                                                                .wb_dat_o(wb_dat_o), .wb_ack_o(wb_ack_o)
-   //                                                                                .map_wr_en_o(map_wr_en), .map_wr_addr_o(map_wr_addr)
-   //                                                                                .map_wr_dat_o(map_wr_dat),
-   //                                                                                .mem_wr_en_o(mem_wr_en), .mem_wr_addr_o(mem_wr_addr)
-   //                                                                                .mem_wr_dat_o(mem_wr_dat));
-
-   //reg_map map_0(.map_wr_en_i(map_wr_en), .map_wr_addr_i(map_wr_addr_en), .map_wr_dat_i(map_wr_dat), .reg_map_o(reg_map));
-   //mem mem_0(.mem_wr_en_i(mem_wr_en), .mem_wr_addr_i(mem_wr_addr_en), .mem_wr_dat_i(mem_wr_dat));
-   //sine_lut sine_0();
-   //sawtooth_lut sawtooth_0();
+   //--------------------------------------------------------------------------------------------------------------------------------------------
    //dds_core dds_0();
+   //lfsr lfsr_0();
 
-   //------------------------------------------------------------------------------------------------------------------------
+   //--------------------------------------------------------------------------------------------------------------------------------------------
+   // RTL
+   //--------------------------------------------------------------------------------------------------------------------------------------------
+   always @ (posedge wb_clk_i) begin
+      if(wb_rst_i) begin
+         // TODO reset any internal registers
+         wb_ack_r <= 1'b0;
+
+         // TODO include reset file via preprocessor to reset the ram for sine and sawtooth
+         // include files are the auto-generated reset values for the Sine and sawtooth LUTs
+      end else begin
+         // Writes------------------------
+         if((wb_stb_i) && (wb_we_i)) begin
+            if((wb_addr_i > 16'h0000) && (wb_addr_i < 16'h0006)) reg_map_r[wb_addr_i[2:0]] <= wb_dat_i;        // Control/Status Registers
+            if((wb_addr_i >= 16'h0400) && (wb_addr_i < 16'h07FF)) user_ram_r[wb_addr_i[9:0]] <= wb_dat_i[7:0]; // User RAM
+         end
+
+         // Reads-------------------------
+         if((wb_stb_i) && (~wb_we_i)) begin
+            if(wb_addr_i < 16'h0006) wb_dat_r <= reg_map_r[wb_addr_i[2:0]];                                        // Control/Status Registers
+            if((wb_addr_i >= 16'h0400) && (wb_addr_i < 16'h07FF)) wb_dat_r <= {24'd0, user_ram_r[wb_addr_i[9:0]]}; // User RAM
+            if((wb_addr_i >= 16'h0800) && (wb_addr_i < 16'h0BFF)) wb_dat_r <= {24'd0, sine_lut_r[wb_addr_i[9:0]]}; // Sine LUT
+            if((wb_addr_i >= 16'h0C00) && (wb_addr_i < 16'h0FFF)) wb_dat_r <= {24'd0, saw_lut_r[wb_addr_i[9:0]]};  // Saw LUT
+         end
+
+         // Acknowledge transaction------
+         wb_ack_r <= wb_stb_i;
+      end
+   end
+
+   //--------------------------------------------------------------------------------------------------------------------------------------------
    // Assigns
-   //------------------------------------------------------------------------------------------------------------------------
+   //--------------------------------------------------------------------------------------------------------------------------------------------
+   // Wishbone
    assign wb_dat_o = wb_dat_r;
    assign wb_ack_o = wb_ack_r;
+
+   // Waveform
    assign wave_o = wave_r;
 
 endmodule // simple_dds

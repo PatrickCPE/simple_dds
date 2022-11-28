@@ -1,0 +1,40 @@
+* Reset
+#+begin_src 
+{signal: [
+  {name: 'wb_clk_i', wave: 'P..|..'},
+  {name: 'wb_rst_i', wave: '01x|0.'},
+], foot: {text:'Reset Sequence',tick:0}
+}
+#+end_src
+* Write
+#+begin_src 
+{signal: [
+  {name: 'wb_clk_i', wave: 'P.|.', period : 2},
+  {name: 'wb_stb_i', wave: 'x..1...x',},
+  {name: 'wb_we_i', wave: 'x..0...x'},
+  {name: 'wb_addr_i', wave: 'x..5...x', data: ['rd addr']},
+  {name: 'wb_ack_o', wave: 'x...|1.x'},
+  {name: 'wb_dat_o', wave: 'x...|3.x', data: ['rd data']},
+], foot: {text:'Read Sequence',tick:0}
+}
+#+end_src
+* Read
+#+begin_src 
+  {signal: [
+  {name: 'wb_clk_i', wave: 'P......'},
+  {name: 'wb_rst_i', wave: '0.1x|0.'},
+  {name: 'wb_stb_i', wave: 'x..0|.1'},
+  {name: 'wb_we_i', wave: 'x......'},
+  {name: 'wb_addr_i', wave: 'x......'},
+  {name: 'wb_dat_i', wave: 'x......', data: ['head']},
+  {name: 'wb_ack_o', wave: 'x......'},
+  {name: 'wb_dat_o', wave: 'x......', data: ['head']},
+  
+
+],
+   foot:{
+   text:'Reset Sequence',
+   tick:0
+ },}
+#+end_src
+
