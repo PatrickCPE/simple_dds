@@ -1,0 +1,141 @@
+#+title: Simple DDS Specification
+#+author: Patrick Hoey
+#+email: patrickrhoey@gmail.com
+# TODO Date
+#+date: 2022-10-30
+#+description: A small DDS core capable of generating sin or arbitrary waves based upon configuration.
+
+#+OPTIONS: ^:nil
+
+-----
+* TODO Overview
+Simple DDS Specification
+
+Author: Patrick Hoey
+
+Email: patrickrhoey@gmail.com
+
+Date: 2022-10-30
+
+Revision: 0.1
+
+Description:
+DDS (Direct Digital Synthesis) core capable of waveform generation. The core has a Wishbone B4 Classic bus interface.
+-----
+* Architecture
+#+caption: Simple DDS Block Diagram
+[[file:simple_dds.png]]
+-----
+* Operation
+A Direct Digital Synthesizer (DDS) is a method of generating a variable frequency waveform via a digital method. It operates via a tuning word, an input clock, a phase accumulator, and a look up table(LUT).
+
+The DDS core has a pointer(the phase accumulator) that will reference a location in one of the LUTs. This LUT contains the data for a waveform (for example the values of Sine).
+Your tuning word is a measure of how many addresses to increment every time your DDS clock edge occurs(overflow returns you to the start of the LUT).
+Therefore your DDS will iterate through the LUT faster with a higher valued tuning word based, at the cost of hitting less values.
+
+#+caption: Phase accumulator diagram
+[[file:phase_acccumulator.png]]
+
+Therein is your trade-off with a DDS. You can iterate through the waveform shape slowly with very high precision and a slow output frequency, or iterate through it quickly with less precision and a high output frequency. 
+
+| variable       | description                                                      |
+| $f_{out}$      | output frequency of your signal                                  |
+| M              | Tuning word value (Magnitude of jumps on your phase accumulator) |
+| $f_{dds\_clk}$ | Frequency of your input clock to the DDS core                    |
+| n              | Width of your phase accumulator                                  |
+
+$f_{out} = {{M * f_{dds\_clk}} / 2^n}$
+
+This particular core has 4 LUTs you can iterate through. A sine wave, a sawtooth wave, a random wave(which isn't truly a LUT), and a user defined wave that you can program into RAM via the interface. \
+There is also a gain and offset register that the user can program to modify the output signal. The output signal pipes directly into a DAC to create your waveform.
+
+This core communicates with external IP via a Wishbone B4 Classic Bus. See references to access the specification.
+-----
+* TODO Registers and Memory
+** Registers
+| register name | register address | Bit Map                                | R/W | Description                                                                                 | Initial Value |
+| ready         |           0x0000 | {[31:1] reserved, [0] ready}           | R   | Will assert high once core can begin operation following a reset                            |    0x00000000 |
+| enable        |           0x0001 | {[31:1] reserved, [0] enable}          | R/W | Enables DDS operation once written. Ready must be high before you can write to this         |    0x00000000 |
+| dds_src       |           0x0002 | {[31:2] reserved, [1:0] dds_src}       | R/W | Indicates the source of the dds signal. 0=Sine, 1=Sawtooth, 2=Random, 3=Memory              |    0x00000000 |
+| tuning_word   |           0x0003 | {[31:16] reserved, [15:0] tuning_word} | R/W | Tuning word for the DDS phase accumulator                                                   |    0x00000001 |
+| gain_word     |           0x0004 | {[31:2] reserved, [1:0] gain_word}     | R/W | Multiplier for gain. Gain is a multiple of 2 so setting gain_word = 0x3 -> 2^3 -> x8        |    0x00000000 |
+| offset_word   |           0x0005 | {31:16} reserved, [15:0] offset_word   | R/W | Offset to be added to the result. Be aware clipping can occur if you add an offset too high |    0x00000000 |
+-----
+** Memory
+-----
+* TODO Clocks
+The following clocks are present within the design.
+| clock name | clock description                                                               | Clock max frequency |
+| wb_clk_i   | Wishbone B4 Classic bus clock input                                             | Process Dependent   |
+| dds_clk_i  | Input to the DDS core itself. The frequency at which the phase acumulator jumps | Process Dependent   |
+-----
+* IO Ports
+Wishbone interface uses the Wishbone B4 Classic slave interface. The optional features select, error, and retry are not supported on the bus. With the exclusion of select all data transfers are 32-bit.
+| port name | port width | description                                                                                                             |
+| dds_clk_i |          1 | Input to the DDS  core itself. This clock provides $f_{dds}$ defined in the equation in Operations                      |
+| wb_clk_i  |          1 | Input clock to the core                                                                                                 |
+| wb_rst_i  |          1 | Reset for the core                                                                                                      |
+| wb_dat_i  |         32 | 32-bit data input to the core                                                                                           |
+| wb_addr_i |          5 | Indicates a valid bus cycle is in progress. Remains asserted for multi clock bus transactions                           |
+| wb_lock_i |          1 | Indicates the current bus cycle is uninterruptible. Implies only the current master can access this slave until negated |
+| wb_cyc_i  |          1 | Indicates that a valid bus cycle is in progress when asserted                                                           |
+| wb_we_i   |          1 | Indicates that this is a write when asserted, and a read when not                                                       |
+| wb_dat_o  |         32 | 32-bit data output from the core                                                                                        |
+| wb_ack_o  |          1 | Indicates the termination of a bus cycle                                                                                |
+| wave_o    |         16 | Word to be passed to ADC to generate your output waveform                                                               |
+-----
+* TODO Design
+** Design Overview
+The design will be done in Verilog. All utilized features need to be synthesizable via Xilinx's Synthesizer. The design shall follow the Open Core's Coding guidelines(with postfix rather than prefix variable labels).
+
+All modules should be parameterizable where possible.
+
+Verilator's linter will be used throughout the design project. Every module must past linting with no warnings or have a waiver.
+
+Git will be used for version control.
+*** Lint Warning Wavers
+-----
+* TODO Verification
+** Verification Plan
+The verification of the core will follow the methods and test points listed below.
+*** Verification Methodology
+The verification will be performed via CocoTB. CocoTb is python based co-simulator that relies on the Verilog VPI. This is akin to incorporating C libraries alongside your Verilog with tools like Xcellium or VCS.
+
+You can use most commercial simulators with this, but Icarus Verilog will be used for this design due to the fact it is free and offers full support.
+
+CocoTB is capable of System Verilog style constrained random variables, and it also incorporates System Verilog style coverage. It also allows easy incorporation of any python library like math and plotting libraries.
+
+The key selling point for CocoTB is PyUVM (Commercial support for PyUVM is available from Seimens).
+PyUVM is an implementation of the UVM specification in python. It includes all your standard phasing stages, and it also includes things like sequencers, agents, the Register Abstraction Layer(RAL), etc.
+*** Functional Coverage
+**** Bit Bash
+All DUT registers and read permissions will be ensured via a bit bash sequence on the Register Map.
+**** Wave Outputs
+The DUT will be tested for all possible waveform outputs {SINE, SAWTOOTH, RANDOM, RAM_BASED}. (The RAM_BASED wave will test a user defined wave of each the following types{SINE, TRIANGLE, PULSE})
+**** Gain Testing
+The DUT will test for all gain values.
+**** Offset testing
+The DUT will test for all offset values.
+** TODO Verification Results
+-----
+* TODO Revision History
+#+caption: Change history for this core
+| Rev |       Date | Author | Description     |
+| 0.1 | 30-10-2022 | phoey  | initial release |
+-----
+* Appendices
+** Resources & References
+*** RGGen
+RGGen is a register generator that will generate RTL, Documentation, C headers, and a UVM RAL package based upon your written register specification.
+https://github.com/rggen/rggen
+*** ADI - All About Direct Digital Synthesis
+https://www.analog.com/en/analog-dialogue/articles/all-about-direct-digital-synthesis.html
+*** Open Cores Specification Template
+https://cdn.opencores.org/downloads/specification_template.dot
+*** Open Cores Coding Guideline
+https://opencores.org/websvn/filedetails?repname=common&path=%2Fcommon%2Ftrunk%2Fopencores_coding_guidelines.pdf
+*** Open Cores Wishbone B4 Specification
+https://cdn.opencores.org/downloads/wbspec_b4.pdf
+*** ZipCPU - Wishbone Slave Guide
+https://zipcpu.com/zipcpu/2017/05/29/simple-wishbone.html
+
