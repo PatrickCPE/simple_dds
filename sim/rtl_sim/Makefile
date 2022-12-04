@@ -19,13 +19,13 @@ lint_simple_dds:
 
 simple_dds:
 	@$(CC) -o ./run/simple_dds.tb $(TB_FOLDER)/simple_dds_tb.v $(RTL_FOLDER)/simple_dds.v;
-	@cd ./run && $(CCR) simple_dds.tb;
+	@cd ./run && $(CCR) simple_dds.tb | tee ../log/simple_dds_log_$$(date +%Y%m%d%H%M%S).tb;
 
-simple_dds_wave: simple_dds
-	@gtkwave alu.vcd
+wave_simple_dds: simple_dds
+	@gtkwave out/wave_simple_dds.vcd
 
 clean:
-	@rm -rf log/*.tb log/*./vcd
-	@rm -rf run/*.tb run/*./vcd
-	@rm -rf out/*.tb out/*./vcd
+	@rm -rf log/*.tb log/*.vcd
+	@rm -rf run/*.tb run/*.vcd
+	@rm -rf out/*.tb out/*.vcd
 
