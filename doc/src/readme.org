@@ -1,4 +1,4 @@
-#+title: Simple DDS Specification
+#+title: Simple DDS Specification - Patrick Hoey
 #+author: Patrick Hoey
 #+email: patrickrhoey@gmail.com
 #+date: 2022-11-28
@@ -14,9 +14,9 @@ Author: Patrick Hoey
 
 Email: patrickrhoey@gmail.com
 
-Date: 2022-10-30
+Date: 2022-12-04
 
-Revision: 0.1
+Revision: 1.0
 
 Description:
 DDS (Direct Digital Synthesis) core capable of waveform generation. The core has a Wishbone B4 Classic bus interface.
@@ -52,18 +52,21 @@ This core communicates with external IP via a Wishbone B4 Classic Bus. See refer
 
 #+caption: Reset Sequence
 [[file:reset_seq.png]]
-Reset must be asserted for at least one clock cycle. It may be asserted any length of clock cycles.
+
+Reset: Reset must be asserted for at least one clock cycle. It may be asserted any length of clock cycles.
+
+Read: wb_stb_i, wb_we_i, and wb_addr_i must be ready before the rising edge of wb_clk_i.
+      wb_dat_o and wb_ack will become valid some time before the next bclk edge and will remain valid for one clock. 
+
+Write: This is effectively the same as a read except wb_we_i is driven high.
+wb_ack_o will be driven high on the next cycle if the write was successful. 
 
 #+caption: Read Sequence
 [[file:read_seq.png]]
-wb_stb_i, wb_we_i, and wb_addr_i must be ready before the rising edge of wb_clk_i.
-wb_dat_o and wb_ack will become valid some time before the next bclk edge and will remain valid for one clock.
 
 
 #+caption: Write Sequence
 [[file:write_seq.png]]
-This is effectively the same as a read except wb_we_i is driven high.
-wb_ack_o will be driven high on the next cycle if the write was successful.
 -----
 * Registers and Memory
 ** Registers
@@ -74,7 +77,6 @@ wb_ack_o will be driven high on the next cycle if the write was successful.
 | tuning_word   |            0x003 | {[31:8] reserved, [7:0] tuning_word}   | R/W | Tuning word for the DDS phase accumulator                                            |    0x00000001 |
 | gain_word     |            0x004 | {[31:2] reserved, [1:0] gain_word}     | R/W | Multiplier for gain. Gain is a multiple of 2 so setting gain_word = 0x3 -> 2^3 -> x8 |    0x00000000 |
 | offset_word   |            0x005 | {31:16} reserved, [15:0] offset_word   | R/W | Offset to be added to the result.                                                    |    0x00007FFF |
-# TODO add seed register and determine seed width
 
 -----
 ** LUTs
@@ -115,8 +117,8 @@ Verilator's linter will be used throughout the design project. Every module must
 
 Git will be used for version control.
 *** Lint Warning Wavers
-| Warning                 | Reason for Waiver                                                                                                   |
-| Unused Bits in Register | The control and status registers were purposely made to large at 32 bit. Only the actually mapped bit fields matter |
+| Warning                 | Reason for Waiver                                         |
+| Unused Bits in Register | The control and status registers were purposely oversized |
 -----
 * Verification
 ** Verification Plan
