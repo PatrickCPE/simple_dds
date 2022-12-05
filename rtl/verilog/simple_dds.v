@@ -92,7 +92,7 @@ module simple_dds (/*AUTOARG*/
          reg_map_r[2]  <= 0;
          reg_map_r[3]  <= 1;
          reg_map_r[4]  <= 0;
-         reg_map_r[5]  <= 32'h0000_00FF;
+         reg_map_r[5]  <= 32'h0000_7FFF;
       end else begin
          // Writes------------------------
          if((wb_stb_i) && (wb_we_i)) begin

@@ -37,4 +37,17 @@
    tick:0
  },}
 #+end_src
+* Write
+#+begin_src 
+ {signal: [
+  {name: 'wb_clk_i', wave: 'P.|.', period : 2},
+  {name: 'wb_stb_i', wave: 'x..1|..x',},
+  {name: 'wb_we_i', wave: 'x..1|..x'},
+  {name: 'wb_addr_i', wave: 'x..5|..x', data: ['  wr addr']},
+  {name: 'wb_ack_o', wave: 'x...|1.x'},
+  {name: 'wb_dat_i', wave: 'x..|3..x', data: ['wr data']},
+], foot: {text:'Write Sequence',tick:0}
+}
+#+end_src
+
 

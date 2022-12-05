@@ -25,7 +25,7 @@ DDS (Direct Digital Synthesis) core capable of waveform generation. The core has
 #+caption: Simple DDS Block Diagram
 [[file:simple_dds.png]]
 -----
-* Operation
+* TODO Operation
 A Direct Digital Synthesizer (DDS) is a method of generating a variable frequency waveform via a digital method. It operates via a tuning word, an input clock, a phase accumulator, and a look up table(LUT).
 
 The DDS core has a pointer(the phase accumulator) that will reference a location in one of the LUTs. This LUT contains the data for a waveform (for example the values of Sine).
@@ -71,9 +71,9 @@ TODO write picture and explanation
 | ready         |            0x000 | {[31:1] reserved, [0] ready}           | R   | Will assert high once core can begin operation following a reset                     |    0x00000000 |
 | enable        |            0x001 | {[31:1] reserved, [0] enable}          | R/W | Enables DDS operation once written. Ready must be high before you can write to this  |    0x00000000 |
 | dds_src       |            0x002 | {[31:2] reserved, [1:0] dds_src}       | R/W | Indicates the source of the dds signal. 0=Sine, 1=Sawtooth, 2 = Triangle, 3=Random   |    0x00000000 |
-| tuning_word   |            0x003 | {[31:16] reserved, [15:0] tuning_word} | R/W | Tuning word for the DDS phase accumulator                                            |    0x00000001 |
+| tuning_word   |            0x003 | {[31:8] reserved, [7:0] tuning_word}   | R/W | Tuning word for the DDS phase accumulator                                            |    0x00000001 |
 | gain_word     |            0x004 | {[31:2] reserved, [1:0] gain_word}     | R/W | Multiplier for gain. Gain is a multiple of 2 so setting gain_word = 0x3 -> 2^3 -> x8 |    0x00000000 |
-| offset_word   |            0x005 | {31:16} reserved, [15:0] offset_word   | R/W | Offset to be added to the result.                                                    |    0x000000FF |
+| offset_word   |            0x005 | {31:16} reserved, [15:0] offset_word   | R/W | Offset to be added to the result.                                                    |    0x00007FFF |
 # TODO add seed register and determine seed width
 
 -----
@@ -134,23 +134,78 @@ Verification will be performed in standard verilog via Icarus Verilog. Make will
 All DUT registers and read permissions will be ensured via a bit bash sequence on the Register Map.
 **** Wave Outputs
 The DUT will be tested for all possible waveform outputs {SINE, SAWTOOTH, RANDOM, RAM_BASED}. (The RAM_BASED wave will test a user defined wave of each the following types{SINE, TRIANGLE, PULSE})
+**** Tuning Word
+The DUT will vary the output frequency based upon tuning word.
 **** Gain Testing
-The DUT will test for all gain values.
+The DUT will vary the output gain based on gain word.
 **** Offset testing
-The DUT will test for all offset values.
+The DUT vary the output offset based on offset word.
 ** TODO Verification Results
 -----
+All tests by results randomize completely. The following cases are some cherry picked corner cases that the default random case had temporarily overwritten for the sake of recording these results.
+
+Note: Initially the offset was reset to the wrong value of 0x0fff rather than 0x7fff. You'll notice that the pictures prior to offset testing will use that default. This was fixed for the final release.
+*** Bit Bash
+Passing
+*** Wave Outputs
+All values besides dds_src are set to the defaults. Note that this tests the defaults for the other test conditions as well
+**** Sine Wave
+#+caption: Sine Wave
+[[file:wave_sin.png]]
+**** Sawtooth Wave
+#+caption: Sawtooth Wave
+[[file:wave_saw.png]]
+**** Triangle Wave
+#+caption: Triangle Wave
+[[file:wave_tri.png]]
+**** Random Wave
+#+caption: Random Wave
+[[file:wave_rand.png]]
+*** Tuning Word
+All values besides tuning_word are set to the defaults.
+**** 8'h0F 
+#+caption: Tuning Word of 8'h0F
+[[file:tune_0f.png]]
+**** 8'h3F 
+#+caption: Tuning Word of 8'h3F
+[[file:tune_3f.png]]
+**** 8'hFF 
+#+caption: Tuning Word of 8'hFF
+[[file:tune_ff.png]]
+*** Gain Testing
+All values besides gain_word are set to the default.
+**** x2
+#+caption: Gain x2
+[[file:gain_2.png]]
+**** x4
+#+caption: Gain x4
+[[file:gain_4.png]]
+**** x8
+#+caption: Gain x8
+[[file:gain_8.png]]
+*** Offset Testing
+All values besides offset word are set to the default
+**** 16'd0
+#+caption: Offset 16'h0000
+[[file:offset_0.png]]
+**** 16'H3FFF
+#+caption: Offset 16'h3FFF
+[[file:offset_3fff.png]]
+**** 16'hFFFF
+#+caption: Offset 16'hFFFF
+[[file:offset_ffff.png]]
+*** Final Results
+From the results above you can see full functional verification of the DUT. All features are working according to the specification.
 * Revision History
+ 
 #+caption: Change history for this core
 | Rev |       Date | Author | Description                    |
+| 1.0 | 2022-12-04 | phoey  | Release of Core                |
 | 0.2 | 28-11-2022 | phoey  | update register map and memory |
 | 0.1 | 30-10-2022 | phoey  | initial release                |
 -----
 * Appendices
 ** Resources & References
-*** RGGen
-RGGen is a register generator that will generate RTL, Documentation, C headers, and a UVM RAL package based upon your written register specification.
-https://github.com/rggen/rggen
 *** ADI - All About Direct Digital Synthesis
 https://www.analog.com/en/analog-dialogue/articles/all-about-direct-digital-synthesis.html
 *** Open Cores Specification Template
@@ -165,4 +220,7 @@ https://zipcpu.com/zipcpu/2017/05/29/simple-wishbone.html
 https://projectf.io/posts/fpga-sine-table/
 *** LFSR Guide
 https://simplefpga.blogspot.com/2013/02/random-number-generator-in-verilog-fpga.html
+*** Generate LUTs
+https://github.com/ShenghanGao/Lookup-Table
+* Code
 

@@ -8,6 +8,7 @@ CCR=vvp
 
 RTL_FOLDER=$(shell cd ../../rtl/verilog; pwd)
 TB_FOLDER=$(shell cd ./src; pwd)
+SW_FOLDER=$(shell cd ../../sw; pwd)
 
 
 all: simple_dds
@@ -23,6 +24,9 @@ simple_dds:
 
 wave_simple_dds: simple_dds
 	@gtkwave out/wave_simple_dds.vcd
+
+plot_simple_dds: simple_dds
+	@python3 $(SW_FOLDER)/plot_results.py
 
 lint_lfsr:
 	@verilator --lint-only --Wall $(RTL_FOLDER)/lfsr && echo "LINT: OK"
