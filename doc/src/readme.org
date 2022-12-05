@@ -67,22 +67,27 @@ TODO write picture and explanation
 -----
 * Registers and Memory
 ** Registers
-| register name | register address | Bit Map                                | R/W | Description                                                                                 | Initial Value |
-| ready         |            0x000 | {[31:1] reserved, [0] ready}           | R   | Will assert high once core can begin operation following a reset                            |    0x00000000 |
-| enable        |            0x001 | {[31:1] reserved, [0] enable}          | R/W | Enables DDS operation once written. Ready must be high before you can write to this         |    0x00000000 |
-| dds_src       |            0x002 | {[31:2] reserved, [1:0] dds_src}       | R/W | Indicates the source of the dds signal. 0=Sine, 1=Sawtooth, 2=Random, 3=Memory              |    0x00000000 |
-| tuning_word   |            0x003 | {[31:16] reserved, [15:0] tuning_word} | R/W | Tuning word for the DDS phase accumulator                                                   |    0x00000001 |
-| gain_word     |            0x004 | {[31:2] reserved, [1:0] gain_word}     | R/W | Multiplier for gain. Gain is a multiple of 2 so setting gain_word = 0x3 -> 2^3 -> x8        |    0x00000000 |
-| offset_word   |            0x005 | {31:16} reserved, [15:0] offset_word   | R/W | Offset to be added to the result. Be aware clipping can occur if you add an offset too high |    0x00000000 |
+| register name | register address | Bit Map                                | R/W | Description                                                                          | Initial Value |
+| ready         |            0x000 | {[31:1] reserved, [0] ready}           | R   | Will assert high once core can begin operation following a reset                     |    0x00000000 |
+| enable        |            0x001 | {[31:1] reserved, [0] enable}          | R/W | Enables DDS operation once written. Ready must be high before you can write to this  |    0x00000000 |
+| dds_src       |            0x002 | {[31:2] reserved, [1:0] dds_src}       | R/W | Indicates the source of the dds signal. 0=Sine, 1=Sawtooth, 2 = Triangle, 3=Random   |    0x00000000 |
+| tuning_word   |            0x003 | {[31:16] reserved, [15:0] tuning_word} | R/W | Tuning word for the DDS phase accumulator                                            |    0x00000001 |
+| gain_word     |            0x004 | {[31:2] reserved, [1:0] gain_word}     | R/W | Multiplier for gain. Gain is a multiple of 2 so setting gain_word = 0x3 -> 2^3 -> x8 |    0x00000000 |
+| offset_word   |            0x005 | {31:16} reserved, [15:0] offset_word   | R/W | Offset to be added to the result.                                                    |    0x000000FF |
 # TODO add seed register and determine seed width
+
 -----
 ** Memory
 | memory region | region lower bound | region upper bound | Data Width | R/W | Description                                                               |
-| RAM           |              0x400 |              0x7FF |          8 | R/W | User memory area. 1024 8-bit memory cells to store user defined waveforms |
-| Sine          |              0x800 |              0xBFF |          8 | R   | Sine look up table used by the DDS core                                   |
-| Sawtooth      |              0xC00 |              0xFFF |          8 | R   | Sawtooth look up table used by the DDS core                               |
+| RAM           |              0x400 |              0x4FF |          8 | R/W | User memory area. 256 8-bit memory cells to store user defined waveforms |
 
-When reading or writing from the memory areas only the lower 7 bits of the wishbone data output signal will be utilized due to the 8 bit data widths.
+When reading or writing from the memory areas only the lower 7 bits of the wishbone data output signal will be utilized due to the 8 bit data widths. Please note that these cells are not reset to a value.
+
+Garbage Data will be in them on before they have been written to.
+** LUTs
+| LUT      | LUT Width | LUT Data Width | Data Width |Description                                 |
+| Sine     |       256 |              8 |          8 | Sine look up table used by the DDS core    |
+| Sawtooth |       256 |              8 |          8 | Sawtooth look up table used by the DDS core |
 -----
 * Clocks
 The following clocks are present within the design.
@@ -156,4 +161,8 @@ https://opencores.org/websvn/filedetails?repname=common&path=%2Fcommon%2Ftrunk%2
 https://cdn.opencores.org/downloads/wbspec_b4.pdf
 *** ZipCPU - Wishbone Slave Guide
 https://zipcpu.com/zipcpu/2017/05/29/simple-wishbone.html
+*** Sin Table Generation and Guide
+https://projectf.io/posts/fpga-sine-table/
+*** LFSR Guide
+https://simplefpga.blogspot.com/2013/02/random-number-generator-in-verilog-fpga.html
 

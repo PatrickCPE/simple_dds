@@ -24,7 +24,7 @@ module simple_dds_tb ();
       DDS_SRC_RST_VAL = 32'd0,
       TUNING_WORD_RST_VAL = 32'd1,
       GAIN_WORD_RST_VAL = 32'd0,
-      OFFSET_WORD_RST_VAL = 32'd0;
+      OFFSET_WORD_RST_VAL = 32'h000000FF;
 
 
    reg wb_clk_i_tb;
@@ -81,6 +81,14 @@ module simple_dds_tb ();
    end
 
    reg [DATA_WIDTH-1:0] read_data;
+   reg [ADDR_WIDTH-1:0] read_addr;
+
+   // DUT Random Register Values
+   reg                  enable_tb;
+   reg [1:0]            dds_src_tb;
+   reg [15:0]           tuning_word_tb;
+   reg [1:0]            gain_word_tb;
+   reg [15:0]           offset_word_tb;
 
    initial begin
       $display("INFO: Testing Register Writes");
@@ -93,7 +101,8 @@ module simple_dds_tb ();
       wb_stb_i_tb  = 0;
       dds_clk_i_tb = 0;
 
-      read_data = 0;
+      read_data    = 0;
+      read_addr    = 0;
 
       // Reset DUT------------------------------------
       @ (negedge wb_clk_i_tb);
@@ -119,8 +128,6 @@ module simple_dds_tb ();
       if(!(read_data === GAIN_WORD_RST_VAL)) $display("ERROR: GAIN_WORD reset to wrong value: 0x%h", read_data);
       wb_read(OFFSET_WORD, read_data);
       if(!(read_data === OFFSET_WORD_RST_VAL)) $display("ERROR: OFFSET_WORD reset to wrong value: 0x%h", read_data);
-
-
 
       // Set
       wb_write(READY, 32'hffff_ffff);
@@ -162,7 +169,7 @@ module simple_dds_tb ();
       wb_read(OFFSET_WORD, read_data);
       if(!(read_data[15:0] === 16'h0000)) $display("ERROR: OFFSET_WORD reset to wrong value: 0x%h", read_data);
 
-      // Test Wave with No Gain/Offset----------------
+      // Test Wave with Default Gain/Offset----------------
       // Test Wave with Gain and no Offset------------
       // Test Wave with no Gain and Offset------------
       // Test Wave with Gain and Offset---------------
@@ -205,6 +212,34 @@ module simple_dds_tb ();
       end
    endtask // wb_read
 
+   integer rand_1;
+   integer rand_2;
+   task randomize_test();
+      begin
+      // Randomize Test Environment and Print It To Log
+      rand_1         = $urandom;
+      rand_2         = $urandom;
+      dds_src_tb     = {30'd0, rand_1[1:0]};
+      tuning_word_tb = {16'd0, rand_2[31:16]};
+      gain_word_tb   = {30'd0, rand_1[3:2]};
+      offset_word_tb = {16'd0, rand_2[15:0]};
+
+      case(dds_src_tb[1:0])
+         2'b00 : $display("INFO: DDS_SRC: SINE");
+         2'b01 : $display("INFO: DDS_SRC: SAW");
+         2'b10 : $display("INFO: DDS_SRC: TRI");
+         2'b11 : $display("INFO: DDS_SRC: RANDOM");
+      endcase // case (dds_src_tb[1:0])
+      $display("INFO: TUNING_WORD 0x%h", tuning_word_tb[15:0]);
+      case(gain_word_tb[1:0])
+         2'b00 : $display("INFO GAIN_WORD: x1");
+         2'b01 : $display("INFO GAIN_WORD: x2");
+         2'b10 : $display("INFO GAIN_WORD: x4");
+         2'b11 : $display("INFO GAIN_WORD: x8");
+      endcase
+      $display("INFO: OFFSET_WORD 0x%h", offset_word_tb[15:0]);
+      end
+   endtask
 
 endmodule // simple_dds_tb
 

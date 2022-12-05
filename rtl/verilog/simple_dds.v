@@ -57,28 +57,28 @@ module simple_dds (/*AUTOARG*/
    wire [DATA_WIDTH-1:0]         offset_word_w;
    /* verilator lint_on UNUSED */
 
-   // User RAM and LUTs
-   reg [7:0]                    user_ram_r [1023:0];
-   reg [7:0]                    sine_lut_r [1023:0];
-   reg [7:0]                    saw_lut_r [1023:0];
-
    // Registered output signals
    reg [DATA_WIDTH-1:0]        wb_dat_r;
    reg                         wb_ack_r;
-   reg [WAVE_WIDTH-1:0]        wave_r;
-
-   // DDS Core signals
-   wire [7:0]                  dds_data;
-   wire [9:0]                   phase_addr;
+   wire [WAVE_WIDTH-1:0]        wave_res;
 
    // Random Number Generator Signals
-   wire [7:0]                   rand_num;
+   // TODO wire [7:0]                   rand_num;
 
    //--------------------------------------------------------------------------------------------------------------------------------------------
    // Module Instantiations
    //--------------------------------------------------------------------------------------------------------------------------------------------
-   //dds_core dds_0();
-   //lfsr lfsr_0();
+   dds_core dds_0(// Outputs
+                  .wave_o               (wave_res),
+                  // Inputs
+                  .dds_clk_i            (dds_clk_i),
+                  .wb_clk_i             (wb_clk_i),
+                  .wb_rst_i             (wb_rst_i),
+                  .dds_src_i            (dds_src_w[1:0]),
+                  .tuning_word_i        (tuning_word_w[7:0]),
+                  .gain_word_i          (gain_word_w[1:0]),
+                  .offset_word_i        (offset_word_w[15:0]));
+
 
    //--------------------------------------------------------------------------------------------------------------------------------------------
    // RTL
@@ -86,47 +86,25 @@ module simple_dds (/*AUTOARG*/
    always @ (posedge wb_clk_i) begin
       if(wb_rst_i) begin
          // TODO reset any internal registers
-         wb_ack_r <= 1'b0;
-         reg_map_r[0] <= 1; // TODO determine if ready needs some other condition
-         reg_map_r[1] <= 0;
-         reg_map_r[2] <= 0;
-         reg_map_r[3] <= 1;
-         reg_map_r[4] <= 0;
-         reg_map_r[5] <= 0;
-
-         // TODO include reset file via preprocessor to reset the ram for sine and sawtooth
-         // include files are the auto-generated reset values for the Sine and sawtooth LUTs
+         wb_ack_r      <= 1'b0;
+         reg_map_r[0]  <= 1; // TODO determine if ready needs some other condition
+         reg_map_r[1]  <= 0;
+         reg_map_r[2]  <= 0;
+         reg_map_r[3]  <= 1;
+         reg_map_r[4]  <= 0;
+         reg_map_r[5]  <= 32'h0000_00FF;
       end else begin
          // Writes------------------------
          if((wb_stb_i) && (wb_we_i)) begin
             if((wb_addr_i > 16'h0000) && (wb_addr_i < 16'h0006)) begin
-               $display("Trying to Write CTRL STATUS REGS");
-               reg_map_r[wb_addr_i[2:0]] <= wb_dat_i;        // Control/Status Registers
-            end
-            if((wb_addr_i >= 16'h0400) && (wb_addr_i < 16'h07FF)) begin
-               $display("Trying to Write USER RAM");
-               user_ram_r[wb_addr_i[9:0]] <= wb_dat_i[7:0]; // User RAM
+               reg_map_r[wb_addr_i[2:0]] <= wb_dat_i;
             end
          end
 
          // Reads-------------------------
          else if((wb_stb_i) && (~wb_we_i)) begin
-            $display("Trying to Read");
             if(wb_addr_i < 16'h0006) begin
-               $display("Trying to Read REG");
-               wb_dat_r <= reg_map_r[wb_addr_i[2:0]];           // Control/Status Registers
-            end
-            else if((wb_addr_i >= 16'h0400) && (wb_addr_i < 16'h07FF)) begin
-               $display("Trying to Read USER RAM");
-               wb_dat_r <= {24'd0, user_ram_r[wb_addr_i[9:0]]}; // User RAM
-            end
-            else if((wb_addr_i >= 16'h0800) && (wb_addr_i < 16'h0BFF)) begin
-               $display("Trying to Read SINE");
-               wb_dat_r <= {24'd0, sine_lut_r[wb_addr_i[9:0]]}; // Sine LUT
-            end
-            else if((wb_addr_i >= 16'h0C00) && (wb_addr_i < 16'h0FFF)) begin
-               $display("Trying to Read SAW");
-               wb_dat_r <= {24'd0, saw_lut_r[wb_addr_i[9:0]]};  // Saw LUT
+               wb_dat_r <= reg_map_r[wb_addr_i[2:0]];
             end
          end
 
@@ -143,7 +121,7 @@ module simple_dds (/*AUTOARG*/
    assign wb_ack_o = wb_ack_r;
 
    // Waveform
-   assign wave_o = wave_r;
+   assign wave_o = enable_w[0] ? wave_res : 0;
 
    // Register Observation Wires
    assign ready_w = reg_map_r[0];
