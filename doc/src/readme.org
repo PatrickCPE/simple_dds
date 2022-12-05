@@ -77,17 +77,11 @@ wb_ack_o will be driven high on the next cycle if the write was successful.
 # TODO add seed register and determine seed width
 
 -----
-** Memory
-| memory region | region lower bound | region upper bound | Data Width | R/W | Description                                                               |
-| RAM           |              0x400 |              0x4FF |          8 | R/W | User memory area. 256 8-bit memory cells to store user defined waveforms |
-
-When reading or writing from the memory areas only the lower 7 bits of the wishbone data output signal will be utilized due to the 8 bit data widths. Please note that these cells are not reset to a value.
-
-Garbage Data will be in them on before they have been written to.
 ** LUTs
-| LUT      | LUT Width | LUT Data Width | Data Width |Description                                 |
-| Sine     |       256 |              8 |          8 | Sine look up table used by the DDS core    |
+| LUT      | LUT Width | LUT Data Width | Data Width | Description                                 |
+| Sine     |       256 |              8 |          8 | Sine look up table used by the DDS core     |
 | Sawtooth |       256 |              8 |          8 | Sawtooth look up table used by the DDS core |
+| Triangle |       256 |              8 |          8 | Triangle look up table used by the DDS core |
 -----
 * Clocks
 The following clocks are present within the design.
@@ -95,10 +89,10 @@ The following clocks are present within the design.
 | wb_clk_i   | Wishbone B4 Classic bus clock input                                             | Process Dependent   |
 | dds_clk_i  | Input to the DDS core itself. The frequency at which the phase acumulator jumps | Process Dependent   |
 
-Clock speeds will depend upon the specific cell library or FPGA this design processes.
+Clock speeds will depend upon the specific cell library or FPGA this design processes. All resets within the design are synchronous.
 -----
 * IO Ports
-Wishbone interface uses the Wishbone B4 Classic slave interface. The optional features select, error, and retry are not supported on the bus. With the exclusion of select all data transfers are 32-bit.
+Wishbone interface uses the Wishbone B4 Classic slave interface. The optional features select, error, and retry are not supported on the bus. Due to the exclusion of the select line, all data transfers are 32-bit wide.
 | port name | port width | description                                                                                        |
 | wb_clk_i  |          1 | Input clock to the core                                                                            |
 | wb_rst_i  |          1 | Reset for the core                                                                                 |
@@ -110,11 +104,10 @@ Wishbone interface uses the Wishbone B4 Classic slave interface. The optional fe
 | wb_ack_o  |          1 | Indicates the termination of a bus cycle                                                           |
 | dds_clk_i |          1 | Input to the DDS  core itself. This clock provides $f_{dds}$ defined in the equation in Operations |
 | wave_o    |         16 | Word to be passed to ADC to generate your output waveform                                          |
-TODO Update wb addr width
 -----
 * Design
 ** Design Overview
-The design will be done in Verilog. All utilized features need to be synthesizable via Xilinx's Synthesizer. The design shall follow the Open Core's Coding guidelines(with postfix rather than prefix variable labels).
+The design will be done in Verilog. All utilized features need to be synthesizable via Xilinx's Synthesizer. The design shall follow the Open Core's Coding guidelines.
 
 All modules should be parameterizable where possible.
 
@@ -122,13 +115,14 @@ Verilator's linter will be used throughout the design project. Every module must
 
 Git will be used for version control.
 *** Lint Warning Wavers
+| Warning                 | Reason for Waiver                                                                                                   |
+| Unused Bits in Register | The control and status registers were purposely made to large at 32 bit. Only the actually mapped bit fields matter |
 -----
 * Verification
 ** Verification Plan
 The verification of the core will follow the methods and test points listed below.
 *** Verification Methodology
 Verification will be performed in standard verilog via Icarus Verilog. Make will be used to organize test runs.
-
 *** Functional Coverage
 **** Bit Bash
 All DUT registers and read permissions will be ensured via a bit bash sequence on the Register Map.
@@ -139,7 +133,7 @@ The DUT will vary the output frequency based upon tuning word.
 **** Gain Testing
 The DUT will vary the output gain based on gain word.
 **** Offset testing
-The DUT vary the output offset based on offset word.
+The DUT will vary the output offset based on offset word.
 ** Verification Results
 -----
 *** Simple_DDS Example Waveforms
@@ -157,7 +151,7 @@ See the abbreviated results from the testbench here
 
 simple_dds_log_20221204211523.tb
 #+begin_src shell
-   VCD info: dumpfile ../out/wave_simple_dds.vcd opened for output.
+  VCD info: dumpfile ../out/wave_simple_dds.vcd opened for output.
   INFO: Testing Register Writes
   ---------------------------------------------------------------------------
   INFO: DDS_SRC: SINE
@@ -253,6 +247,7 @@ All values besides offset word are set to the default
 #+caption: Offset 16'h3FFF
 [[file:offset_3fff.png]]
 ***** 16'hFFFF
+Note that this is what happens when your waveform clips completely :)
 #+caption: Offset 16'hFFFF
 [[file:offset_ffff.png]]
 *** Final Results
@@ -287,1510 +282,756 @@ https://github.com/ShenghanGao/Lookup-Table
 ** RTL
 simple_dds.v
 #+begin_src verilog
-//                              -*- Mode: Verilog -*-
-// Filename        : simple_dds.v
-// Description     : A direct digital synthesis core capable of sine, sawtooth, random, and user defined waves
-// Author          : Patrick Hoey
-// Created On      : Sun Nov 27 18:23:16 2022
-// Last Modified By: Patrick Hoey
-// Last Modified On: Sun Nov 27 18:23:16 2022
-// Update Count    : 0
-// Status          : Unknown, Use with caution!
+  //                              -*- Mode: Verilog -*-
+  // Filename        : simple_dds.v
+  // Description     : A direct digital synthesis core capable of sine, sawtooth, random, and user defined waves
+  // Author          : Patrick Hoey
+  // Created On      : Sun Nov 27 18:23:16 2022
+  // Last Modified By: Patrick Hoey
+  // Last Modified On: Sun Nov 27 18:23:16 2022
+  // Update Count    : 0
+  // Status          : Unknown, Use with caution!
 
-module simple_dds (/*AUTOARG*/
-   // Outputs
-   wb_dat_o, wb_ack_o, wave_o,
-   // Inputs
-   wb_clk_i, wb_rst_i, wb_dat_i, wb_addr_i, wb_we_i, wb_stb_i, dds_clk_i
-   ) ;
-   //------------------------------------------------------------------------------------------------------------------------
-   // Parameters
-   //------------------------------------------------------------------------------------------------------------------------
-   parameter DATA_WIDTH = 32;
-   parameter ADDR_WIDTH = 16;
-   parameter WAVE_WIDTH = 16;
+  module simple_dds (/*AUTOARG*/
+                     // Outputs
+                     wb_dat_o, wb_ack_o, wave_o,
+                     // Inputs
+                     wb_clk_i, wb_rst_i, wb_dat_i, wb_addr_i, wb_we_i, wb_stb_i, dds_clk_i
+                     ) ;
+     //------------------------------------------------------------------------------------------------------------------------
+     // Parameters
+     //------------------------------------------------------------------------------------------------------------------------
+     parameter DATA_WIDTH = 32;
+     parameter ADDR_WIDTH = 16;
+     parameter WAVE_WIDTH = 16;
 
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   // I/O
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   // Wishbone Interface Signals
-   input wire wb_clk_i;
-   input wire wb_rst_i;
-   input wire [DATA_WIDTH-1:0] wb_dat_i;
-   input wire [ADDR_WIDTH-1:0] wb_addr_i;
-   input wire                  wb_we_i;
-   input wire                  wb_stb_i;
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     // I/O
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     // Wishbone Interface Signals
+     input wire wb_clk_i;
+     input wire wb_rst_i;
+     input wire [DATA_WIDTH-1:0] wb_dat_i;
+     input wire [ADDR_WIDTH-1:0] wb_addr_i;
+     input wire                  wb_we_i;
+     input wire                  wb_stb_i;
 
-   output wire [DATA_WIDTH-1:0] wb_dat_o;
-   output wire                  wb_ack_o;
+     output wire [DATA_WIDTH-1:0] wb_dat_o;
+     output wire                  wb_ack_o;
 
-   // Misc IO signals
-   input wire                   dds_clk_i;
+     // Misc IO signals
+     input wire                   dds_clk_i;
 
-   output wire [WAVE_WIDTH-1:0] wave_o;
+     output wire [WAVE_WIDTH-1:0] wave_o;
 
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   // Internal Signals
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   // Register Map Signals
-   reg [DATA_WIDTH-1:0]         reg_map_r [5:0]; // Consult Spec for register map
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     // Internal Signals
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     // Register Map Signals
+     reg [DATA_WIDTH-1:0]         reg_map_r [5:0]; // Consult Spec for register map
 
-   // Observation wires to ensure registers work properly
-   /* verilator lint_off UNUSED */
-   wire [DATA_WIDTH-1:0]         ready_w;
-   wire [DATA_WIDTH-1:0]         enable_w;
-   wire [DATA_WIDTH-1:0]         dds_src_w;
-   wire [DATA_WIDTH-1:0]         tuning_word_w;
-   wire [DATA_WIDTH-1:0]         gain_word_w;
-   wire [DATA_WIDTH-1:0]         offset_word_w;
-   /* verilator lint_on UNUSED */
+     // Observation wires to ensure registers work properly
+     /* verilator lint_off UNUSED */
+     wire [DATA_WIDTH-1:0]        ready_w;
+     wire [DATA_WIDTH-1:0]        enable_w;
+     wire [DATA_WIDTH-1:0]        dds_src_w;
+     wire [DATA_WIDTH-1:0]        tuning_word_w;
+     wire [DATA_WIDTH-1:0]        gain_word_w;
+     wire [DATA_WIDTH-1:0]        offset_word_w;
+     /* verilator lint_on UNUSED */
 
-   // Registered output signals
-   reg [DATA_WIDTH-1:0]        wb_dat_r;
-   reg                         wb_ack_r;
-   wire [WAVE_WIDTH-1:0]        wave_res;
-
-
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   // Module Instantiations
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   dds_core dds_0(// Outputs
-                  .wave_o               (wave_res),
-                  // Inputs
-                  .dds_clk_i            (dds_clk_i),
-                  .wb_clk_i             (wb_clk_i),
-                  .wb_rst_i             (wb_rst_i),
-                  .dds_src_i            (dds_src_w[1:0]),
-                  .tuning_word_i        (tuning_word_w[7:0]),
-                  .gain_word_i          (gain_word_w[1:0]),
-                  .offset_word_i        (offset_word_w[15:0]));
+     // Registered output signals
+     reg [DATA_WIDTH-1:0]         wb_dat_r;
+     reg                          wb_ack_r;
+     wire [WAVE_WIDTH-1:0]        wave_res;
 
 
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   // RTL
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   always @ (posedge wb_clk_i) begin
-      if(wb_rst_i) begin
-         wb_ack_r      <= 1'b0;
-         reg_map_r[0]  <= 1;
-         reg_map_r[1]  <= 0;
-         reg_map_r[2]  <= 0;
-         reg_map_r[3]  <= 1;
-         reg_map_r[4]  <= 0;
-         reg_map_r[5]  <= 32'h0000_7FFF;
-      end else begin
-         // Writes------------------------
-         if((wb_stb_i) && (wb_we_i)) begin
-            if((wb_addr_i > 16'h0000) && (wb_addr_i < 16'h0006)) begin
-               reg_map_r[wb_addr_i[2:0]] <= wb_dat_i;
-            end
-         end
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     // Module Instantiations
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     dds_core dds_0(// Outputs
+                    .wave_o               (wave_res),
+                    // Inputs
+                    .dds_clk_i            (dds_clk_i),
+                    .wb_clk_i             (wb_clk_i),
+                    .wb_rst_i             (wb_rst_i),
+                    .dds_src_i            (dds_src_w[1:0]),
+                    .tuning_word_i        (tuning_word_w[7:0]),
+                    .gain_word_i          (gain_word_w[1:0]),
+                    .offset_word_i        (offset_word_w[15:0]));
 
-         // Reads-------------------------
-         else if((wb_stb_i) && (~wb_we_i)) begin
-            if(wb_addr_i < 16'h0006) begin
-               wb_dat_r <= reg_map_r[wb_addr_i[2:0]];
-            end
-         end
 
-         // Acknowledge transaction------
-         wb_ack_r <= wb_stb_i;
-      end
-   end
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     // RTL
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     always @ (posedge wb_clk_i) begin
+        if(wb_rst_i) begin
+           wb_ack_r      <= 1'b0;
+           reg_map_r[0]  <= 1;
+           reg_map_r[1]  <= 0;
+           reg_map_r[2]  <= 0;
+           reg_map_r[3]  <= 1;
+           reg_map_r[4]  <= 0;
+           reg_map_r[5]  <= 32'h0000_7FFF;
+        end else begin
+           // Writes------------------------
+           if((wb_stb_i) && (wb_we_i)) begin
+              if((wb_addr_i > 16'h0000) && (wb_addr_i < 16'h0006)) begin
+                 reg_map_r[wb_addr_i[2:0]] <= wb_dat_i;
+              end
+           end
 
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   // Assigns
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   // Wishbone
-   assign wb_dat_o = wb_dat_r;
-   assign wb_ack_o = wb_ack_r;
+           // Reads-------------------------
+           else if((wb_stb_i) && (~wb_we_i)) begin
+              if(wb_addr_i < 16'h0006) begin
+                 wb_dat_r <= reg_map_r[wb_addr_i[2:0]];
+              end
+           end
 
-   // Waveform
-   assign wave_o = enable_w[0] ? wave_res : 0;
+           // Acknowledge transaction------
+           wb_ack_r <= wb_stb_i;
+        end
+     end
 
-   // Register Observation Wires
-   assign ready_w = reg_map_r[0];
-   assign enable_w = reg_map_r[1];
-   assign dds_src_w = reg_map_r[2];
-   assign tuning_word_w = reg_map_r[3];
-   assign gain_word_w = reg_map_r[4];
-   assign offset_word_w = reg_map_r[5];
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     // Assigns
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     // Wishbone
+     assign wb_dat_o = wb_dat_r;
+     assign wb_ack_o = wb_ack_r;
 
-endmodule // simple_dds
+     // Waveform
+     assign wave_o = enable_w[0] ? wave_res : 0;
+
+     // Register Observation Wires
+     assign ready_w = reg_map_r[0];
+     assign enable_w = reg_map_r[1];
+     assign dds_src_w = reg_map_r[2];
+     assign tuning_word_w = reg_map_r[3];
+     assign gain_word_w = reg_map_r[4];
+     assign offset_word_w = reg_map_r[5];
+
+  endmodule // simple_dds
 #+end_src
 
 dds_core.v
 #+begin_src verilog
- //                              -*- Mode: Verilog -*-
-// Filename        : dds_core.v
-// Description     : Generates the DDS output signal. Note that 3 dds clock edges must occur before the signal becomes valid
-// Author          : Patrick
-// Created On      : Sun Dec  4 17:59:32 2022
-// Last Modified By: Patrick
-// Last Modified On: Sun Dec  4 17:59:32 2022
-// Update Count    : 0
-// Status          : Unknown, Use with caution!
+  //                              -*- Mode: Verilog -*-
+  // Filename        : dds_core.v
+  // Description     : Generates the DDS output signal. Note that 3 dds clock edges must occur before the signal becomes valid
+  // Author          : Patrick
+  // Created On      : Sun Dec  4 17:59:32 2022
+  // Last Modified By: Patrick
+  // Last Modified On: Sun Dec  4 17:59:32 2022
+  // Update Count    : 0
+  // Status          : Unknown, Use with caution!
 
 
-module dds_core (/*AUTOARG*/
-   // Outputs
-   wave_o,
-   // Inputs
-   dds_clk_i, wb_clk_i, wb_rst_i, dds_src_i, tuning_word_i, gain_word_i,
-   offset_word_i
-   ) ;
-   //------------------------------------------------------------------------------------------------------------------------
-   // Parameters
-   //------------------------------------------------------------------------------------------------------------------------
-   parameter WAVE_WIDTH = 16;
-
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   // I/O
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   input wire dds_clk_i;
-   input wire wb_clk_i;
-   input wire wb_rst_i;
-   input wire [1:0] dds_src_i;
-   input wire [7:0] tuning_word_i;
-   input wire [1:0]  gain_word_i;
-   input wire [15:0] offset_word_i;
-
-   output wire [WAVE_WIDTH-1:0] wave_o;
-
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   // Internal Signals
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   reg [7:0]                    phase_acum_r;
-   wire [7:0]                    sine_w;
-   wire [7:0]                    tri_w;
-   wire [7:0]                    saw_w;
-   wire [7:0]                    rand_w;
-
-   reg [WAVE_WIDTH/2-1:0]          wave_pre_multiply;
-   reg [WAVE_WIDTH-1:0]          wave_pre_offset;
-   reg [WAVE_WIDTH-1:0]         wave_r;
-
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   // Module Instantiations
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   sine_lut sine_0(/// Outputs
-                   .sine_o              (sine_w),
+  module dds_core (/*AUTOARG*/
+                   // Outputs
+                   wave_o,
                    // Inputs
-                   .address_i           (phase_acum_r));
-   tri_lut tri_0(// Outputs
-                 .tri_o                 (tri_w),
+                   dds_clk_i, wb_clk_i, wb_rst_i, dds_src_i, tuning_word_i, gain_word_i,
+                   offset_word_i
+                   ) ;
+     //------------------------------------------------------------------------------------------------------------------------
+     // Parameters
+     //------------------------------------------------------------------------------------------------------------------------
+     parameter WAVE_WIDTH = 16;
+
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     // I/O
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     input wire dds_clk_i;
+     input wire wb_clk_i;
+     input wire wb_rst_i;
+     input wire [1:0] dds_src_i;
+     input wire [7:0] tuning_word_i;
+     input wire [1:0] gain_word_i;
+     input wire [15:0] offset_word_i;
+
+     output wire [WAVE_WIDTH-1:0] wave_o;
+
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     // Internal Signals
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     reg [7:0]                    phase_acum_r;
+     wire [7:0]                   sine_w;
+     wire [7:0]                   tri_w;
+     wire [7:0]                   saw_w;
+     wire [7:0]                   rand_w;
+
+     reg [WAVE_WIDTH/2-1:0]       wave_pre_multiply;
+     reg [WAVE_WIDTH-1:0]         wave_pre_offset;
+     reg [WAVE_WIDTH-1:0]         wave_r;
+
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     // Module Instantiations
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     sine_lut sine_0(/// Outputs
+                     .sine_o              (sine_w),
+                     // Inputs
+                     .address_i           (phase_acum_r));
+     tri_lut tri_0(// Outputs
+                   .tri_o                 (tri_w),
+                   // Inputs
+                   .address_i             (phase_acum_r));
+     saw_lut saw_0(// Outputs
+                   .saw_o                 (saw_w),
+                   // Inputs
+                   .address_i             (phase_acum_r));
+
+     lfsr lfsr_0(// Outputs
+                 .rand_o                  (rand_w),
                  // Inputs
-                 .address_i             (phase_acum_r));
-   saw_lut saw_0(// Outputs
-                 .saw_o                 (saw_w),
-                 // Inputs
-                 .address_i             (phase_acum_r));
+                 .clk_i                   (dds_clk_i),
+                 .rst_i                   (wb_rst_i));
 
-   lfsr lfsr_0(// Outputs
-               .rand_o                  (rand_w),
-               // Inputs
-               .clk_i                   (dds_clk_i),
-               .rst_i                   (wb_rst_i));
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     // RTL
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     always @ (posedge dds_clk_i or posedge wb_clk_i) begin
+        if (wb_clk_i & wb_rst_i) begin
+           phase_acum_r <= 8'd0;
+           wave_pre_multiply <= 0;
+           wave_pre_offset <= 0;
+           wave_r <= 0;
+        end else begin
+           phase_acum_r <= phase_acum_r + tuning_word_i;
+           case (dds_src_i)
+              2'b00 : wave_pre_multiply <= sine_w; // Sine
+              2'b01 : wave_pre_multiply <= saw_w; // Sawtooth
+              2'b10 : wave_pre_multiply <= tri_w; // Triangle
+              2'b11 : wave_pre_multiply <= rand_w; // Random
+           endcase // case (dds_src_i)
+           case (gain_word_i)
+              2'b00 : wave_pre_offset <= {8'b0, wave_pre_multiply}; // x1
+              2'b01 : wave_pre_offset <= {7'b0, wave_pre_multiply, 1'b0}; // x2
+              2'b10 : wave_pre_offset <= {6'b0, wave_pre_multiply, 2'b0}; // x4
+              2'b11 : wave_pre_offset <= {5'b0, wave_pre_multiply, 3'b0}; // x8
+           endcase // case (gain_word_i)
+           wave_r <= wave_pre_offset + offset_word_i;
+        end
+     end
 
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   // RTL
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   always @ (posedge dds_clk_i or posedge wb_clk_i) begin
-      if (wb_clk_i & wb_rst_i) begin
-         phase_acum_r <= 8'd0;
-         wave_pre_multiply <= 0;
-         wave_pre_offset <= 0;
-         wave_r <= 0;
-      end else begin
-         phase_acum_r <= phase_acum_r + tuning_word_i;
-         case (dds_src_i)
-            2'b00 : wave_pre_multiply <= sine_w; // Sine
-            2'b01 : wave_pre_multiply <= saw_w; // Sawtooth
-            2'b10 : wave_pre_multiply <= tri_w; // Triangle
-            2'b11 : wave_pre_multiply <= rand_w; // Random
-         endcase // case (dds_src_i)
-         case (gain_word_i)
-            2'b00 : wave_pre_offset <= {8'b0, wave_pre_multiply}; // x1
-            2'b01 : wave_pre_offset <= {7'b0, wave_pre_multiply, 1'b0}; // x2
-            2'b10 : wave_pre_offset <= {6'b0, wave_pre_multiply, 2'b0}; // x4
-            2'b11 : wave_pre_offset <= {5'b0, wave_pre_multiply, 3'b0}; // x8
-         endcase // case (gain_word_i)
-         wave_r <= wave_pre_offset + offset_word_i;
-      end
-   end
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     // Assigns
+     //--------------------------------------------------------------------------------------------------------------------------------------------
+     assign wave_o = wave_r;
 
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   // Assigns
-   //--------------------------------------------------------------------------------------------------------------------------------------------
-   assign wave_o = wave_r;
-
-endmodule // dds_core
+  endmodule // dds_core
 #+end_src
 
 lfsr.v
 #+begin_src verilog
- //                              -*- Mode: Verilog -*-
-// Filename        : lfsr.v
-// Description     : LFSR Random Number Generator
-// Author          : Patrick
-// Created On      : Sun Dec  4 18:12:53 2022
-// Last Modified By: Patrick
-// Last Modified On: Sun Dec  4 18:12:53 2022
-// Update Count    : 0
-// Status          : Unknown, Use with caution!
-// Based on https://simplefpga.blogspot.com/2013/02/random-number-generator-in-verilog-fpga.html
+  //                              -*- Mode: Verilog -*-
+  // Filename        : lfsr.v
+  // Description     : LFSR Random Number Generator
+  // Author          : Patrick
+  // Created On      : Sun Dec  4 18:12:53 2022
+  // Last Modified By: Patrick
+  // Last Modified On: Sun Dec  4 18:12:53 2022
+  // Update Count    : 0
+  // Status          : Unknown, Use with caution!
+  // Based on https://simplefpga.blogspot.com/2013/02/random-number-generator-in-verilog-fpga.html
 
 
-module lfsr (/*AUTOARG*/
-   // Outputs
-   rand_o,
-   // Inputs
-   clk_i, rst_i
-   ) ;
-   input wire clk_i;
-   input wire rst_i;
-   output wire [7:0] rand_o;
+  module lfsr (/*AUTOARG*/
+               // Outputs
+               rand_o,
+               // Inputs
+               clk_i, rst_i
+               ) ;
+     input wire clk_i;
+     input wire rst_i;
+     output wire [7:0] rand_o;
 
-   wire              feedback_w;
+     wire              feedback_w;
 
-   reg [7:0] rand_r;
+     reg [7:0]         rand_r;
 
-   always @ (posedge clk_i) begin
-      if (rst_i) begin
-         rand_r <= 8'hFF;
-      end else begin
-         rand_r <= {rand_r[6:0], feedback_w};
-      end
-   end
+     always @ (posedge clk_i) begin
+        if (rst_i) begin
+           rand_r <= 8'hFF;
+        end else begin
+           rand_r <= {rand_r[6:0], feedback_w};
+        end
+     end
 
-   assign feedback_w = rand_r[7] ^ rand_r[5]  ^ rand_r[4]  ^ rand_r[3];
-   assign rand_o = rand_r;
-endmodule // lfsr
+     assign feedback_w = rand_r[7] ^ rand_r[5]  ^ rand_r[4]  ^ rand_r[3];
+     assign rand_o = rand_r;
+  endmodule // lfsr
 #+end_src
 
 sin_lut.v
 #+begin_src verilog
- module sine_lut (/*AUTOARG*/
-   // Outputs
-   sine_o,
-   // Inputs
-   address_i
-   ) ;
-   input wire [7:0] address_i;
-   output reg [7:0] sine_o;
+  module sine_lut (/*AUTOARG*/
+                   // Outputs
+                   sine_o,
+                   // Inputs
+                   address_i
+                   ) ;
+     input wire [7:0] address_i;
+     output reg [7:0] sine_o;
 
-   always @ (*) begin
-      case (address_i)
-         8'b00000000: sine_o = 8'b10000000;
-		     8'b00000001: sine_o = 8'b10000011;
-		     8'b00000010: sine_o = 8'b10000110;
-		     8'b00000011: sine_o = 8'b10001001;
-		     8'b00000100: sine_o = 8'b10001101;
-		     8'b00000101: sine_o = 8'b10010000;
-		     8'b00000110: sine_o = 8'b10010011;
-		     8'b00000111: sine_o = 8'b10010110;
-		     8'b00001000: sine_o = 8'b10011001;
-		     8'b00001001: sine_o = 8'b10011100;
-		     8'b00001010: sine_o = 8'b10011111;
-		     8'b00001011: sine_o = 8'b10100010;
-		     8'b00001100: sine_o = 8'b10100101;
-		     8'b00001101: sine_o = 8'b10101000;
-		     8'b00001110: sine_o = 8'b10101011;
-		     8'b00001111: sine_o = 8'b10101110;
-		     8'b00010000: sine_o = 8'b10110001;
-		     8'b00010001: sine_o = 8'b10110100;
-		     8'b00010010: sine_o = 8'b10110111;
-		     8'b00010011: sine_o = 8'b10111010;
-		     8'b00010100: sine_o = 8'b10111100;
-		     8'b00010101: sine_o = 8'b10111111;
-		     8'b00010110: sine_o = 8'b11000010;
-		     8'b00010111: sine_o = 8'b11000100;
-		     8'b00011000: sine_o = 8'b11000111;
-		     8'b00011001: sine_o = 8'b11001010;
-		     8'b00011010: sine_o = 8'b11001100;
-		     8'b00011011: sine_o = 8'b11001111;
-		     8'b00011100: sine_o = 8'b11010001;
-		     8'b00011101: sine_o = 8'b11010100;
-		     8'b00011110: sine_o = 8'b11010110;
-		     8'b00011111: sine_o = 8'b11011000;
-		     8'b00100000: sine_o = 8'b11011011;
-		     8'b00100001: sine_o = 8'b11011101;
-		     8'b00100010: sine_o = 8'b11011111;
-		     8'b00100011: sine_o = 8'b11100001;
-		     8'b00100100: sine_o = 8'b11100011;
-		     8'b00100101: sine_o = 8'b11100101;
-		     8'b00100110: sine_o = 8'b11100111;
-		     8'b00100111: sine_o = 8'b11101001;
-		     8'b00101000: sine_o = 8'b11101010;
-		     8'b00101001: sine_o = 8'b11101100;
-		     8'b00101010: sine_o = 8'b11101110;
-		     8'b00101011: sine_o = 8'b11101111;
-		     8'b00101100: sine_o = 8'b11110001;
-		     8'b00101101: sine_o = 8'b11110010;
-		     8'b00101110: sine_o = 8'b11110100;
-		     8'b00101111: sine_o = 8'b11110101;
-		     8'b00110000: sine_o = 8'b11110110;
-		     8'b00110001: sine_o = 8'b11110111;
-		     8'b00110010: sine_o = 8'b11111001;
-		     8'b00110011: sine_o = 8'b11111010;
-		     8'b00110100: sine_o = 8'b11111010;
-		     8'b00110101: sine_o = 8'b11111011;
-		     8'b00110110: sine_o = 8'b11111100;
-		     8'b00110111: sine_o = 8'b11111101;
-		     8'b00111000: sine_o = 8'b11111110;
-		     8'b00111001: sine_o = 8'b11111110;
-		     8'b00111010: sine_o = 8'b11111111;
-		     8'b00111011: sine_o = 8'b11111111;
-		     8'b00111100: sine_o = 8'b11111111;
-		     8'b00111101: sine_o = 8'b11111111;
-		     8'b00111110: sine_o = 8'b11111111;
-		     8'b00111111: sine_o = 8'b11111111;
-		     8'b01000000: sine_o = 8'b11111111;
-		     8'b01000001: sine_o = 8'b11111111;
-		     8'b01000010: sine_o = 8'b11111111;
-		     8'b01000011: sine_o = 8'b11111111;
-		     8'b01000100: sine_o = 8'b11111111;
-		     8'b01000101: sine_o = 8'b11111111;
-		     8'b01000110: sine_o = 8'b11111111;
-		     8'b01000111: sine_o = 8'b11111110;
-		     8'b01001000: sine_o = 8'b11111110;
-		     8'b01001001: sine_o = 8'b11111101;
-		     8'b01001010: sine_o = 8'b11111100;
-		     8'b01001011: sine_o = 8'b11111011;
-		     8'b01001100: sine_o = 8'b11111010;
-		     8'b01001101: sine_o = 8'b11111010;
-		     8'b01001110: sine_o = 8'b11111001;
-		     8'b01001111: sine_o = 8'b11110111;
-		     8'b01010000: sine_o = 8'b11110110;
-		     8'b01010001: sine_o = 8'b11110101;
-		     8'b01010010: sine_o = 8'b11110100;
-		     8'b01010011: sine_o = 8'b11110010;
-		     8'b01010100: sine_o = 8'b11110001;
-		     8'b01010101: sine_o = 8'b11101111;
-		     8'b01010110: sine_o = 8'b11101110;
-		     8'b01010111: sine_o = 8'b11101100;
-		     8'b01011000: sine_o = 8'b11101010;
-		     8'b01011001: sine_o = 8'b11101001;
-		     8'b01011010: sine_o = 8'b11100111;
-		     8'b01011011: sine_o = 8'b11100101;
-		     8'b01011100: sine_o = 8'b11100011;
-		     8'b01011101: sine_o = 8'b11100001;
-		     8'b01011110: sine_o = 8'b11011111;
-		     8'b01011111: sine_o = 8'b11011101;
-		     8'b01100000: sine_o = 8'b11011011;
-		     8'b01100001: sine_o = 8'b11011000;
-		     8'b01100010: sine_o = 8'b11010110;
-		     8'b01100011: sine_o = 8'b11010100;
-		     8'b01100100: sine_o = 8'b11010001;
-		     8'b01100101: sine_o = 8'b11001111;
-		     8'b01100110: sine_o = 8'b11001100;
-		     8'b01100111: sine_o = 8'b11001010;
-		     8'b01101000: sine_o = 8'b11000111;
-		     8'b01101001: sine_o = 8'b11000100;
-		     8'b01101010: sine_o = 8'b11000010;
-		     8'b01101011: sine_o = 8'b10111111;
-		     8'b01101100: sine_o = 8'b10111100;
-		     8'b01101101: sine_o = 8'b10111010;
-		     8'b01101110: sine_o = 8'b10110111;
-		     8'b01101111: sine_o = 8'b10110100;
-		     8'b01110000: sine_o = 8'b10110001;
-		     8'b01110001: sine_o = 8'b10101110;
-		     8'b01110010: sine_o = 8'b10101011;
-		     8'b01110011: sine_o = 8'b10101000;
-		     8'b01110100: sine_o = 8'b10100101;
-		     8'b01110101: sine_o = 8'b10100010;
-		     8'b01110110: sine_o = 8'b10011111;
-		     8'b01110111: sine_o = 8'b10011100;
-		     8'b01111000: sine_o = 8'b10011001;
-		     8'b01111001: sine_o = 8'b10010110;
-		     8'b01111010: sine_o = 8'b10010011;
-		     8'b01111011: sine_o = 8'b10010000;
-		     8'b01111100: sine_o = 8'b10001101;
-		     8'b01111101: sine_o = 8'b10001001;
-		     8'b01111110: sine_o = 8'b10000110;
-		     8'b01111111: sine_o = 8'b10000011;
-		     8'b10000000: sine_o = 8'b10000000;
-		     8'b10000001: sine_o = 8'b01111101;
-		     8'b10000010: sine_o = 8'b01111010;
-		     8'b10000011: sine_o = 8'b01110111;
-		     8'b10000100: sine_o = 8'b01110011;
-		     8'b10000101: sine_o = 8'b01110000;
-		     8'b10000110: sine_o = 8'b01101101;
-		     8'b10000111: sine_o = 8'b01101010;
-		     8'b10001000: sine_o = 8'b01100111;
-		     8'b10001001: sine_o = 8'b01100100;
-		     8'b10001010: sine_o = 8'b01100001;
-		     8'b10001011: sine_o = 8'b01011110;
-		     8'b10001100: sine_o = 8'b01011011;
-		     8'b10001101: sine_o = 8'b01011000;
-		     8'b10001110: sine_o = 8'b01010101;
-		     8'b10001111: sine_o = 8'b01010010;
-		     8'b10010000: sine_o = 8'b01001111;
-		     8'b10010001: sine_o = 8'b01001100;
-		     8'b10010010: sine_o = 8'b01001001;
-		     8'b10010011: sine_o = 8'b01000110;
-		     8'b10010100: sine_o = 8'b01000100;
-		     8'b10010101: sine_o = 8'b01000001;
-		     8'b10010110: sine_o = 8'b00111110;
-		     8'b10010111: sine_o = 8'b00111100;
-		     8'b10011000: sine_o = 8'b00111001;
-		     8'b10011001: sine_o = 8'b00110110;
-		     8'b10011010: sine_o = 8'b00110100;
-		     8'b10011011: sine_o = 8'b00110001;
-		     8'b10011100: sine_o = 8'b00101111;
-		     8'b10011101: sine_o = 8'b00101100;
-		     8'b10011110: sine_o = 8'b00101010;
-		     8'b10011111: sine_o = 8'b00101000;
-		     8'b10100000: sine_o = 8'b00100101;
-		     8'b10100001: sine_o = 8'b00100011;
-		     8'b10100010: sine_o = 8'b00100001;
-		     8'b10100011: sine_o = 8'b00011111;
-		     8'b10100100: sine_o = 8'b00011101;
-		     8'b10100101: sine_o = 8'b00011011;
-		     8'b10100110: sine_o = 8'b00011001;
-		     8'b10100111: sine_o = 8'b00010111;
-		     8'b10101000: sine_o = 8'b00010110;
-		     8'b10101001: sine_o = 8'b00010100;
-		     8'b10101010: sine_o = 8'b00010010;
-		     8'b10101011: sine_o = 8'b00010001;
-		     8'b10101100: sine_o = 8'b00001111;
-		     8'b10101101: sine_o = 8'b00001110;
-		     8'b10101110: sine_o = 8'b00001100;
-		     8'b10101111: sine_o = 8'b00001011;
-		     8'b10110000: sine_o = 8'b00001010;
-		     8'b10110001: sine_o = 8'b00001001;
-		     8'b10110010: sine_o = 8'b00000111;
-		     8'b10110011: sine_o = 8'b00000110;
-		     8'b10110100: sine_o = 8'b00000110;
-		     8'b10110101: sine_o = 8'b00000101;
-		     8'b10110110: sine_o = 8'b00000100;
-		     8'b10110111: sine_o = 8'b00000011;
-		     8'b10111000: sine_o = 8'b00000010;
-		     8'b10111001: sine_o = 8'b00000010;
-		     8'b10111010: sine_o = 8'b00000001;
-		     8'b10111011: sine_o = 8'b00000001;
-		     8'b10111100: sine_o = 8'b00000001;
-		     8'b10111101: sine_o = 8'b00000000;
-		     8'b10111110: sine_o = 8'b00000000;
-		     8'b10111111: sine_o = 8'b00000000;
-		     8'b11000000: sine_o = 8'b00000000;
-		     8'b11000001: sine_o = 8'b00000000;
-		     8'b11000010: sine_o = 8'b00000000;
-		     8'b11000011: sine_o = 8'b00000000;
-		     8'b11000100: sine_o = 8'b00000001;
-		     8'b11000101: sine_o = 8'b00000001;
-		     8'b11000110: sine_o = 8'b00000001;
-		     8'b11000111: sine_o = 8'b00000010;
-		     8'b11001000: sine_o = 8'b00000010;
-		     8'b11001001: sine_o = 8'b00000011;
-		     8'b11001010: sine_o = 8'b00000100;
-		     8'b11001011: sine_o = 8'b00000101;
-		     8'b11001100: sine_o = 8'b00000110;
-		     8'b11001101: sine_o = 8'b00000110;
-		     8'b11001110: sine_o = 8'b00000111;
-		     8'b11001111: sine_o = 8'b00001001;
-		     8'b11010000: sine_o = 8'b00001010;
-		     8'b11010001: sine_o = 8'b00001011;
-		     8'b11010010: sine_o = 8'b00001100;
-		     8'b11010011: sine_o = 8'b00001110;
-		     8'b11010100: sine_o = 8'b00001111;
-		     8'b11010101: sine_o = 8'b00010001;
-		     8'b11010110: sine_o = 8'b00010010;
-		     8'b11010111: sine_o = 8'b00010100;
-		     8'b11011000: sine_o = 8'b00010110;
-		     8'b11011001: sine_o = 8'b00010111;
-		     8'b11011010: sine_o = 8'b00011001;
-		     8'b11011011: sine_o = 8'b00011011;
-		     8'b11011100: sine_o = 8'b00011101;
-		     8'b11011101: sine_o = 8'b00011111;
-		     8'b11011110: sine_o = 8'b00100001;
-		     8'b11011111: sine_o = 8'b00100011;
-		     8'b11100000: sine_o = 8'b00100101;
-		     8'b11100001: sine_o = 8'b00101000;
-		     8'b11100010: sine_o = 8'b00101010;
-		     8'b11100011: sine_o = 8'b00101100;
-		     8'b11100100: sine_o = 8'b00101111;
-		     8'b11100101: sine_o = 8'b00110001;
-		     8'b11100110: sine_o = 8'b00110100;
-		     8'b11100111: sine_o = 8'b00110110;
-		     8'b11101000: sine_o = 8'b00111001;
-		     8'b11101001: sine_o = 8'b00111100;
-		     8'b11101010: sine_o = 8'b00111110;
-		     8'b11101011: sine_o = 8'b01000001;
-		     8'b11101100: sine_o = 8'b01000100;
-		     8'b11101101: sine_o = 8'b01000110;
-		     8'b11101110: sine_o = 8'b01001001;
-		     8'b11101111: sine_o = 8'b01001100;
-		     8'b11110000: sine_o = 8'b01001111;
-		     8'b11110001: sine_o = 8'b01010010;
-		     8'b11110010: sine_o = 8'b01010101;
-		     8'b11110011: sine_o = 8'b01011000;
-		     8'b11110100: sine_o = 8'b01011011;
-		     8'b11110101: sine_o = 8'b01011110;
-		     8'b11110110: sine_o = 8'b01100001;
-		     8'b11110111: sine_o = 8'b01100100;
-		     8'b11111000: sine_o = 8'b01100111;
-		     8'b11111001: sine_o = 8'b01101010;
-		     8'b11111010: sine_o = 8'b01101101;
-		     8'b11111011: sine_o = 8'b01110000;
-		     8'b11111100: sine_o = 8'b01110011;
-		     8'b11111101: sine_o = 8'b01110111;
-		     8'b11111110: sine_o = 8'b01111010;
-		     8'b11111111: sine_o = 8'b01111101;
-      endcase
-   end
-endmodule // sine_lut
+     always @ (*) begin
+        case (address_i)
+           8'b00000000: sine_o = 8'b10000000;
+           8'b00000001: sine_o = 8'b10000011;
+           8'b00000010: sine_o = 8'b10000110;
+           //Cut for the sake of printing...
+           8'b11111111: sine_o = 8'b01111101;
+        endcase
+     end
+  endmodule // sine_lut
 #+end_src
 
 saw_lut.v
 #+begin_src verilog
-module saw_lut (/*AUTOARG*/
-   // Outputs
-   saw_o,
-   // Inputs
-   address_i
-   ) ;
-   input wire [7:0] address_i;
-   output reg [7:0] saw_o;
+  module saw_lut (/*AUTOARG*/
+                  // Outputs
+                  saw_o,
+                  // Inputs
+                  address_i
+                  ) ;
+     input wire [7:0] address_i;
+     output reg [7:0] saw_o;
 
-   always @ (*) begin
- 	    case(address_i)
-		     8'b00000000: saw_o = 8'b00000000;
-		     8'b00000001: saw_o = 8'b00000001;
-		     8'b00000010: saw_o = 8'b00000010;
-		     8'b00000011: saw_o = 8'b00000011;
-		     8'b00000100: saw_o = 8'b00000100;
-		     8'b00000101: saw_o = 8'b00000101;
-		     8'b00000110: saw_o = 8'b00000110;
-		     8'b00000111: saw_o = 8'b00000111;
-		     8'b00001000: saw_o = 8'b00001000;
-		     8'b00001001: saw_o = 8'b00001001;
-		     8'b00001010: saw_o = 8'b00001010;
-		     8'b00001011: saw_o = 8'b00001011;
-		     8'b00001100: saw_o = 8'b00001100;
-		     8'b00001101: saw_o = 8'b00001101;
-		     8'b00001110: saw_o = 8'b00001110;
-		     8'b00001111: saw_o = 8'b00001111;
-		     8'b00010000: saw_o = 8'b00010000;
-		     8'b00010001: saw_o = 8'b00010001;
-		     8'b00010010: saw_o = 8'b00010010;
-		     8'b00010011: saw_o = 8'b00010011;
-		     8'b00010100: saw_o = 8'b00010100;
-		     8'b00010101: saw_o = 8'b00010101;
-		     8'b00010110: saw_o = 8'b00010110;
-		     8'b00010111: saw_o = 8'b00010111;
-		     8'b00011000: saw_o = 8'b00011000;
-		     8'b00011001: saw_o = 8'b00011001;
-		     8'b00011010: saw_o = 8'b00011010;
-		     8'b00011011: saw_o = 8'b00011011;
-		     8'b00011100: saw_o = 8'b00011100;
-		     8'b00011101: saw_o = 8'b00011101;
-		     8'b00011110: saw_o = 8'b00011110;
-		     8'b00011111: saw_o = 8'b00011111;
-		     8'b00100000: saw_o = 8'b00100000;
-		     8'b00100001: saw_o = 8'b00100001;
-		     8'b00100010: saw_o = 8'b00100010;
-		     8'b00100011: saw_o = 8'b00100011;
-		     8'b00100100: saw_o = 8'b00100100;
-		     8'b00100101: saw_o = 8'b00100101;
-		     8'b00100110: saw_o = 8'b00100110;
-		     8'b00100111: saw_o = 8'b00100111;
-		     8'b00101000: saw_o = 8'b00101000;
-		     8'b00101001: saw_o = 8'b00101001;
-		     8'b00101010: saw_o = 8'b00101010;
-		     8'b00101011: saw_o = 8'b00101011;
-		     8'b00101100: saw_o = 8'b00101100;
-		     8'b00101101: saw_o = 8'b00101101;
-		     8'b00101110: saw_o = 8'b00101110;
-		     8'b00101111: saw_o = 8'b00101111;
-		     8'b00110000: saw_o = 8'b00110000;
-		     8'b00110001: saw_o = 8'b00110001;
-		     8'b00110010: saw_o = 8'b00110010;
-		     8'b00110011: saw_o = 8'b00110011;
-		     8'b00110100: saw_o = 8'b00110100;
-		     8'b00110101: saw_o = 8'b00110101;
-		     8'b00110110: saw_o = 8'b00110110;
-		     8'b00110111: saw_o = 8'b00110111;
-		     8'b00111000: saw_o = 8'b00111000;
-		     8'b00111001: saw_o = 8'b00111001;
-		     8'b00111010: saw_o = 8'b00111010;
-		     8'b00111011: saw_o = 8'b00111011;
-		     8'b00111100: saw_o = 8'b00111100;
-		     8'b00111101: saw_o = 8'b00111101;
-		     8'b00111110: saw_o = 8'b00111110;
-		     8'b00111111: saw_o = 8'b00111111;
-		     8'b01000000: saw_o = 8'b01000000;
-		     8'b01000001: saw_o = 8'b01000001;
-		     8'b01000010: saw_o = 8'b01000010;
-		     8'b01000011: saw_o = 8'b01000011;
-		     8'b01000100: saw_o = 8'b01000100;
-		     8'b01000101: saw_o = 8'b01000101;
-		     8'b01000110: saw_o = 8'b01000110;
-		     8'b01000111: saw_o = 8'b01000111;
-		     8'b01001000: saw_o = 8'b01001000;
-		     8'b01001001: saw_o = 8'b01001001;
-		     8'b01001010: saw_o = 8'b01001010;
-		     8'b01001011: saw_o = 8'b01001011;
-		     8'b01001100: saw_o = 8'b01001100;
-		     8'b01001101: saw_o = 8'b01001101;
-		     8'b01001110: saw_o = 8'b01001110;
-		     8'b01001111: saw_o = 8'b01001111;
-		     8'b01010000: saw_o = 8'b01010000;
-		     8'b01010001: saw_o = 8'b01010001;
-		     8'b01010010: saw_o = 8'b01010010;
-		     8'b01010011: saw_o = 8'b01010011;
-		     8'b01010100: saw_o = 8'b01010100;
-		     8'b01010101: saw_o = 8'b01010101;
-		     8'b01010110: saw_o = 8'b01010110;
-		     8'b01010111: saw_o = 8'b01010111;
-		     8'b01011000: saw_o = 8'b01011000;
-		     8'b01011001: saw_o = 8'b01011001;
-		     8'b01011010: saw_o = 8'b01011010;
-		     8'b01011011: saw_o = 8'b01011011;
-		     8'b01011100: saw_o = 8'b01011100;
-		     8'b01011101: saw_o = 8'b01011101;
-		     8'b01011110: saw_o = 8'b01011110;
-		     8'b01011111: saw_o = 8'b01011111;
-		     8'b01100000: saw_o = 8'b01100000;
-		     8'b01100001: saw_o = 8'b01100001;
-		     8'b01100010: saw_o = 8'b01100010;
-		     8'b01100011: saw_o = 8'b01100011;
-		     8'b01100100: saw_o = 8'b01100100;
-		     8'b01100101: saw_o = 8'b01100101;
-		     8'b01100110: saw_o = 8'b01100110;
-		     8'b01100111: saw_o = 8'b01100111;
-		     8'b01101000: saw_o = 8'b01101000;
-		     8'b01101001: saw_o = 8'b01101001;
-		     8'b01101010: saw_o = 8'b01101010;
-		     8'b01101011: saw_o = 8'b01101011;
-		     8'b01101100: saw_o = 8'b01101100;
-		     8'b01101101: saw_o = 8'b01101101;
-		     8'b01101110: saw_o = 8'b01101110;
-		     8'b01101111: saw_o = 8'b01101111;
-		     8'b01110000: saw_o = 8'b01110000;
-		     8'b01110001: saw_o = 8'b01110001;
-		     8'b01110010: saw_o = 8'b01110010;
-		     8'b01110011: saw_o = 8'b01110011;
-		     8'b01110100: saw_o = 8'b01110100;
-		     8'b01110101: saw_o = 8'b01110101;
-		     8'b01110110: saw_o = 8'b01110110;
-		     8'b01110111: saw_o = 8'b01110111;
-		     8'b01111000: saw_o = 8'b01111000;
-		     8'b01111001: saw_o = 8'b01111001;
-		     8'b01111010: saw_o = 8'b01111010;
-		     8'b01111011: saw_o = 8'b01111011;
-		     8'b01111100: saw_o = 8'b01111100;
-		     8'b01111101: saw_o = 8'b01111101;
-		     8'b01111110: saw_o = 8'b01111110;
-		     8'b01111111: saw_o = 8'b01111111;
-		     8'b10000000: saw_o = 8'b10000000;
-		     8'b10000001: saw_o = 8'b10000001;
-		     8'b10000010: saw_o = 8'b10000010;
-		     8'b10000011: saw_o = 8'b10000011;
-		     8'b10000100: saw_o = 8'b10000100;
-		     8'b10000101: saw_o = 8'b10000101;
-		     8'b10000110: saw_o = 8'b10000110;
-		     8'b10000111: saw_o = 8'b10000111;
-		     8'b10001000: saw_o = 8'b10001000;
-		     8'b10001001: saw_o = 8'b10001001;
-		     8'b10001010: saw_o = 8'b10001010;
-		     8'b10001011: saw_o = 8'b10001011;
-		     8'b10001100: saw_o = 8'b10001100;
-		     8'b10001101: saw_o = 8'b10001101;
-		     8'b10001110: saw_o = 8'b10001110;
-		     8'b10001111: saw_o = 8'b10001111;
-		     8'b10010000: saw_o = 8'b10010000;
-		     8'b10010001: saw_o = 8'b10010001;
-		     8'b10010010: saw_o = 8'b10010010;
-		     8'b10010011: saw_o = 8'b10010011;
-		     8'b10010100: saw_o = 8'b10010100;
-		     8'b10010101: saw_o = 8'b10010101;
-		     8'b10010110: saw_o = 8'b10010110;
-		     8'b10010111: saw_o = 8'b10010111;
-		     8'b10011000: saw_o = 8'b10011000;
-		     8'b10011001: saw_o = 8'b10011001;
-		     8'b10011010: saw_o = 8'b10011010;
-		     8'b10011011: saw_o = 8'b10011011;
-		     8'b10011100: saw_o = 8'b10011100;
-		     8'b10011101: saw_o = 8'b10011101;
-		     8'b10011110: saw_o = 8'b10011110;
-		     8'b10011111: saw_o = 8'b10011111;
-		     8'b10100000: saw_o = 8'b10100000;
-		     8'b10100001: saw_o = 8'b10100001;
-		     8'b10100010: saw_o = 8'b10100010;
-		     8'b10100011: saw_o = 8'b10100011;
-		     8'b10100100: saw_o = 8'b10100100;
-		     8'b10100101: saw_o = 8'b10100101;
-		     8'b10100110: saw_o = 8'b10100110;
-		     8'b10100111: saw_o = 8'b10100111;
-		     8'b10101000: saw_o = 8'b10101000;
-		     8'b10101001: saw_o = 8'b10101001;
-		     8'b10101010: saw_o = 8'b10101010;
-		     8'b10101011: saw_o = 8'b10101011;
-		     8'b10101100: saw_o = 8'b10101100;
-		     8'b10101101: saw_o = 8'b10101101;
-		     8'b10101110: saw_o = 8'b10101110;
-		     8'b10101111: saw_o = 8'b10101111;
-		     8'b10110000: saw_o = 8'b10110000;
-		     8'b10110001: saw_o = 8'b10110001;
-		     8'b10110010: saw_o = 8'b10110010;
-		     8'b10110011: saw_o = 8'b10110011;
-		     8'b10110100: saw_o = 8'b10110100;
-		     8'b10110101: saw_o = 8'b10110101;
-		     8'b10110110: saw_o = 8'b10110110;
-		     8'b10110111: saw_o = 8'b10110111;
-		     8'b10111000: saw_o = 8'b10111000;
-		     8'b10111001: saw_o = 8'b10111001;
-		     8'b10111010: saw_o = 8'b10111010;
-		     8'b10111011: saw_o = 8'b10111011;
-		     8'b10111100: saw_o = 8'b10111100;
-		     8'b10111101: saw_o = 8'b10111101;
-		     8'b10111110: saw_o = 8'b10111110;
-		     8'b10111111: saw_o = 8'b10111111;
-		     8'b11000000: saw_o = 8'b11000000;
-		     8'b11000001: saw_o = 8'b11000001;
-		     8'b11000010: saw_o = 8'b11000010;
-		     8'b11000011: saw_o = 8'b11000011;
-		     8'b11000100: saw_o = 8'b11000100;
-		     8'b11000101: saw_o = 8'b11000101;
-		     8'b11000110: saw_o = 8'b11000110;
-		     8'b11000111: saw_o = 8'b11000111;
-		     8'b11001000: saw_o = 8'b11001000;
-		     8'b11001001: saw_o = 8'b11001001;
-		     8'b11001010: saw_o = 8'b11001010;
-		     8'b11001011: saw_o = 8'b11001011;
-		     8'b11001100: saw_o = 8'b11001100;
-		     8'b11001101: saw_o = 8'b11001101;
-		     8'b11001110: saw_o = 8'b11001110;
-		     8'b11001111: saw_o = 8'b11001111;
-		     8'b11010000: saw_o = 8'b11010000;
-		     8'b11010001: saw_o = 8'b11010001;
-		     8'b11010010: saw_o = 8'b11010010;
-		     8'b11010011: saw_o = 8'b11010011;
-		     8'b11010100: saw_o = 8'b11010100;
-		     8'b11010101: saw_o = 8'b11010101;
-		     8'b11010110: saw_o = 8'b11010110;
-		     8'b11010111: saw_o = 8'b11010111;
-		     8'b11011000: saw_o = 8'b11011000;
-		     8'b11011001: saw_o = 8'b11011001;
-		     8'b11011010: saw_o = 8'b11011010;
-		     8'b11011011: saw_o = 8'b11011011;
-		     8'b11011100: saw_o = 8'b11011100;
-		     8'b11011101: saw_o = 8'b11011101;
-		     8'b11011110: saw_o = 8'b11011110;
-		     8'b11011111: saw_o = 8'b11011111;
-		     8'b11100000: saw_o = 8'b11100000;
-		     8'b11100001: saw_o = 8'b11100001;
-		     8'b11100010: saw_o = 8'b11100010;
-		     8'b11100011: saw_o = 8'b11100011;
-		     8'b11100100: saw_o = 8'b11100100;
-		     8'b11100101: saw_o = 8'b11100101;
-		     8'b11100110: saw_o = 8'b11100110;
-		     8'b11100111: saw_o = 8'b11100111;
-		     8'b11101000: saw_o = 8'b11101000;
-		     8'b11101001: saw_o = 8'b11101001;
-		     8'b11101010: saw_o = 8'b11101010;
-		     8'b11101011: saw_o = 8'b11101011;
-		     8'b11101100: saw_o = 8'b11101100;
-		     8'b11101101: saw_o = 8'b11101101;
-		     8'b11101110: saw_o = 8'b11101110;
-		     8'b11101111: saw_o = 8'b11101111;
-		     8'b11110000: saw_o = 8'b11110000;
-		     8'b11110001: saw_o = 8'b11110001;
-		     8'b11110010: saw_o = 8'b11110010;
-		     8'b11110011: saw_o = 8'b11110011;
-		     8'b11110100: saw_o = 8'b11110100;
-		     8'b11110101: saw_o = 8'b11110101;
-		     8'b11110110: saw_o = 8'b11110110;
-		     8'b11110111: saw_o = 8'b11110111;
-		     8'b11111000: saw_o = 8'b11111000;
-		     8'b11111001: saw_o = 8'b11111001;
-		     8'b11111010: saw_o = 8'b11111010;
-		     8'b11111011: saw_o = 8'b11111011;
-		     8'b11111100: saw_o = 8'b11111100;
-		     8'b11111101: saw_o = 8'b11111101;
-		     8'b11111110: saw_o = 8'b11111110;
-		     8'b11111111: saw_o = 8'b11111111;
-	    endcase // case (address_i)
-   end
-endmodule // saw_lut
+     always @ (*) begin
+        case(address_i)
+           8'b00000000: saw_o = 8'b00000000;
+           8'b00000001: saw_o = 8'b00000001;
+           8'b00000010: saw_o = 8'b00000010;
+           //Cut for the sake of printing...
+           8'b11111111: saw_o = 8'b11111111;
+        endcase // case (address_i)
+     end
+  endmodule // saw_lut
 #+end_src
 
 tri_lut.v
 #+begin_src verilog
-module tri_lut (/*AUTOARG*/
-   // Outputs
-   tri_o,
-   // Inputs
-   address_i
-   ) ;
-   input wire [7:0] address_i;
-   output reg [7:0] tri_o;
+  module tri_lut (/*AUTOARG*/
+                  // Outputs
+                  tri_o,
+                  // Inputs
+                  address_i
+                  ) ;
+     input wire [7:0] address_i;
+     output reg [7:0] tri_o;
 
-   always @ (*) begin
- 	    case(address_i)
-         8'b00000000: tri_o = 8'b10000000;
-		     8'b00000001: tri_o = 8'b10000010;
-		     8'b00000010: tri_o = 8'b10000100;
-		     8'b00000011: tri_o = 8'b10000110;
-		     8'b00000100: tri_o = 8'b10001000;
-		     8'b00000101: tri_o = 8'b10001010;
-		     8'b00000110: tri_o = 8'b10001100;
-		     8'b00000111: tri_o = 8'b10001110;
-		     8'b00001000: tri_o = 8'b10010000;
-		     8'b00001001: tri_o = 8'b10010010;
-		     8'b00001010: tri_o = 8'b10010100;
-		     8'b00001011: tri_o = 8'b10010110;
-		     8'b00001100: tri_o = 8'b10011000;
-		     8'b00001101: tri_o = 8'b10011010;
-		     8'b00001110: tri_o = 8'b10011100;
-		     8'b00001111: tri_o = 8'b10011110;
-		     8'b00010000: tri_o = 8'b10100000;
-		     8'b00010001: tri_o = 8'b10100010;
-		     8'b00010010: tri_o = 8'b10100100;
-		     8'b00010011: tri_o = 8'b10100110;
-		     8'b00010100: tri_o = 8'b10101000;
-		     8'b00010101: tri_o = 8'b10101010;
-		     8'b00010110: tri_o = 8'b10101100;
-		     8'b00010111: tri_o = 8'b10101110;
-		     8'b00011000: tri_o = 8'b10110000;
-		     8'b00011001: tri_o = 8'b10110010;
-		     8'b00011010: tri_o = 8'b10110100;
-		     8'b00011011: tri_o = 8'b10110110;
-		     8'b00011100: tri_o = 8'b10111000;
-		     8'b00011101: tri_o = 8'b10111010;
-		     8'b00011110: tri_o = 8'b10111100;
-		     8'b00011111: tri_o = 8'b10111110;
-		     8'b00100000: tri_o = 8'b11000000;
-		     8'b00100001: tri_o = 8'b11000010;
-		     8'b00100010: tri_o = 8'b11000100;
-		     8'b00100011: tri_o = 8'b11000110;
-		     8'b00100100: tri_o = 8'b11001000;
-		     8'b00100101: tri_o = 8'b11001010;
-		     8'b00100110: tri_o = 8'b11001100;
-		     8'b00100111: tri_o = 8'b11001110;
-		     8'b00101000: tri_o = 8'b11010000;
-		     8'b00101001: tri_o = 8'b11010010;
-		     8'b00101010: tri_o = 8'b11010100;
-		     8'b00101011: tri_o = 8'b11010110;
-		     8'b00101100: tri_o = 8'b11011000;
-		     8'b00101101: tri_o = 8'b11011010;
-		     8'b00101110: tri_o = 8'b11011100;
-		     8'b00101111: tri_o = 8'b11011110;
-		     8'b00110000: tri_o = 8'b11100000;
-		     8'b00110001: tri_o = 8'b11100010;
-		     8'b00110010: tri_o = 8'b11100100;
-		     8'b00110011: tri_o = 8'b11100110;
-		     8'b00110100: tri_o = 8'b11101000;
-		     8'b00110101: tri_o = 8'b11101010;
-		     8'b00110110: tri_o = 8'b11101100;
-		     8'b00110111: tri_o = 8'b11101110;
-		     8'b00111000: tri_o = 8'b11110000;
-		     8'b00111001: tri_o = 8'b11110010;
-		     8'b00111010: tri_o = 8'b11110100;
-		     8'b00111011: tri_o = 8'b11110110;
-		     8'b00111100: tri_o = 8'b11111000;
-		     8'b00111101: tri_o = 8'b11111010;
-		     8'b00111110: tri_o = 8'b11111100;
-		     8'b00111111: tri_o = 8'b11111110;
-		     8'b01000000: tri_o = 8'b11111111;
-		     8'b01000001: tri_o = 8'b11111110;
-		     8'b01000010: tri_o = 8'b11111100;
-		     8'b01000011: tri_o = 8'b11111010;
-		     8'b01000100: tri_o = 8'b11111000;
-		     8'b01000101: tri_o = 8'b11110110;
-		     8'b01000110: tri_o = 8'b11110100;
-		     8'b01000111: tri_o = 8'b11110010;
-		     8'b01001000: tri_o = 8'b11110000;
-		     8'b01001001: tri_o = 8'b11101110;
-		     8'b01001010: tri_o = 8'b11101100;
-		     8'b01001011: tri_o = 8'b11101010;
-		     8'b01001100: tri_o = 8'b11101000;
-		     8'b01001101: tri_o = 8'b11100110;
-		     8'b01001110: tri_o = 8'b11100100;
-		     8'b01001111: tri_o = 8'b11100010;
-		     8'b01010000: tri_o = 8'b11100000;
-		     8'b01010001: tri_o = 8'b11011110;
-		     8'b01010010: tri_o = 8'b11011100;
-		     8'b01010011: tri_o = 8'b11011010;
-		     8'b01010100: tri_o = 8'b11011000;
-		     8'b01010101: tri_o = 8'b11010110;
-		     8'b01010110: tri_o = 8'b11010100;
-		     8'b01010111: tri_o = 8'b11010010;
-		     8'b01011000: tri_o = 8'b11010000;
-		     8'b01011001: tri_o = 8'b11001110;
-		     8'b01011010: tri_o = 8'b11001100;
-		     8'b01011011: tri_o = 8'b11001010;
-		     8'b01011100: tri_o = 8'b11001000;
-		     8'b01011101: tri_o = 8'b11000110;
-		     8'b01011110: tri_o = 8'b11000100;
-		     8'b01011111: tri_o = 8'b11000010;
-		     8'b01100000: tri_o = 8'b11000000;
-		     8'b01100001: tri_o = 8'b10111110;
-		     8'b01100010: tri_o = 8'b10111100;
-		     8'b01100011: tri_o = 8'b10111010;
-		     8'b01100100: tri_o = 8'b10111000;
-		     8'b01100101: tri_o = 8'b10110110;
-		     8'b01100110: tri_o = 8'b10110100;
-		     8'b01100111: tri_o = 8'b10110010;
-		     8'b01101000: tri_o = 8'b10110000;
-		     8'b01101001: tri_o = 8'b10101110;
-		     8'b01101010: tri_o = 8'b10101100;
-		     8'b01101011: tri_o = 8'b10101010;
-		     8'b01101100: tri_o = 8'b10101000;
-		     8'b01101101: tri_o = 8'b10100110;
-		     8'b01101110: tri_o = 8'b10100100;
-		     8'b01101111: tri_o = 8'b10100010;
-		     8'b01110000: tri_o = 8'b10100000;
-		     8'b01110001: tri_o = 8'b10011110;
-		     8'b01110010: tri_o = 8'b10011100;
-		     8'b01110011: tri_o = 8'b10011010;
-		     8'b01110100: tri_o = 8'b10011000;
-		     8'b01110101: tri_o = 8'b10010110;
-		     8'b01110110: tri_o = 8'b10010100;
-		     8'b01110111: tri_o = 8'b10010010;
-		     8'b01111000: tri_o = 8'b10010000;
-		     8'b01111001: tri_o = 8'b10001110;
-		     8'b01111010: tri_o = 8'b10001100;
-		     8'b01111011: tri_o = 8'b10001010;
-		     8'b01111100: tri_o = 8'b10001000;
-		     8'b01111101: tri_o = 8'b10000110;
-		     8'b01111110: tri_o = 8'b10000100;
-		     8'b01111111: tri_o = 8'b10000010;
-		     8'b10000000: tri_o = 8'b10000000;
-		     8'b10000001: tri_o = 8'b01111110;
-		     8'b10000010: tri_o = 8'b01111100;
-		     8'b10000011: tri_o = 8'b01111010;
-		     8'b10000100: tri_o = 8'b01111000;
-		     8'b10000101: tri_o = 8'b01110110;
-		     8'b10000110: tri_o = 8'b01110100;
-		     8'b10000111: tri_o = 8'b01110010;
-		     8'b10001000: tri_o = 8'b01110000;
-		     8'b10001001: tri_o = 8'b01101110;
-		     8'b10001010: tri_o = 8'b01101100;
-		     8'b10001011: tri_o = 8'b01101010;
-		     8'b10001100: tri_o = 8'b01101000;
-		     8'b10001101: tri_o = 8'b01100110;
-		     8'b10001110: tri_o = 8'b01100100;
-		     8'b10001111: tri_o = 8'b01100010;
-		     8'b10010000: tri_o = 8'b01100000;
-		     8'b10010001: tri_o = 8'b01011110;
-		     8'b10010010: tri_o = 8'b01011100;
-		     8'b10010011: tri_o = 8'b01011010;
-		     8'b10010100: tri_o = 8'b01011000;
-		     8'b10010101: tri_o = 8'b01010110;
-		     8'b10010110: tri_o = 8'b01010100;
-		     8'b10010111: tri_o = 8'b01010010;
-		     8'b10011000: tri_o = 8'b01010000;
-		     8'b10011001: tri_o = 8'b01001110;
-		     8'b10011010: tri_o = 8'b01001100;
-		     8'b10011011: tri_o = 8'b01001010;
-		     8'b10011100: tri_o = 8'b01001000;
-		     8'b10011101: tri_o = 8'b01000110;
-		     8'b10011110: tri_o = 8'b01000100;
-		     8'b10011111: tri_o = 8'b01000010;
-		     8'b10100000: tri_o = 8'b01000000;
-		     8'b10100001: tri_o = 8'b00111110;
-		     8'b10100010: tri_o = 8'b00111100;
-		     8'b10100011: tri_o = 8'b00111010;
-		     8'b10100100: tri_o = 8'b00111000;
-		     8'b10100101: tri_o = 8'b00110110;
-		     8'b10100110: tri_o = 8'b00110100;
-		     8'b10100111: tri_o = 8'b00110010;
-		     8'b10101000: tri_o = 8'b00110000;
-		     8'b10101001: tri_o = 8'b00101110;
-		     8'b10101010: tri_o = 8'b00101100;
-		     8'b10101011: tri_o = 8'b00101010;
-		     8'b10101100: tri_o = 8'b00101000;
-		     8'b10101101: tri_o = 8'b00100110;
-		     8'b10101110: tri_o = 8'b00100100;
-		     8'b10101111: tri_o = 8'b00100010;
-		     8'b10110000: tri_o = 8'b00100000;
-		     8'b10110001: tri_o = 8'b00011110;
-		     8'b10110010: tri_o = 8'b00011100;
-		     8'b10110011: tri_o = 8'b00011010;
-		     8'b10110100: tri_o = 8'b00011000;
-		     8'b10110101: tri_o = 8'b00010110;
-		     8'b10110110: tri_o = 8'b00010100;
-		     8'b10110111: tri_o = 8'b00010010;
-		     8'b10111000: tri_o = 8'b00010000;
-		     8'b10111001: tri_o = 8'b00001110;
-		     8'b10111010: tri_o = 8'b00001100;
-		     8'b10111011: tri_o = 8'b00001010;
-		     8'b10111100: tri_o = 8'b00001000;
-		     8'b10111101: tri_o = 8'b00000110;
-		     8'b10111110: tri_o = 8'b00000100;
-		     8'b10111111: tri_o = 8'b00000010;
-		     8'b11000000: tri_o = 8'b00000000;
-		     8'b11000001: tri_o = 8'b00000010;
-		     8'b11000010: tri_o = 8'b00000100;
-		     8'b11000011: tri_o = 8'b00000110;
-		     8'b11000100: tri_o = 8'b00001000;
-		     8'b11000101: tri_o = 8'b00001010;
-		     8'b11000110: tri_o = 8'b00001100;
-		     8'b11000111: tri_o = 8'b00001110;
-		     8'b11001000: tri_o = 8'b00010000;
-		     8'b11001001: tri_o = 8'b00010010;
-		     8'b11001010: tri_o = 8'b00010100;
-		     8'b11001011: tri_o = 8'b00010110;
-		     8'b11001100: tri_o = 8'b00011000;
-		     8'b11001101: tri_o = 8'b00011010;
-		     8'b11001110: tri_o = 8'b00011100;
-		     8'b11001111: tri_o = 8'b00011110;
-		     8'b11010000: tri_o = 8'b00100000;
-		     8'b11010001: tri_o = 8'b00100010;
-		     8'b11010010: tri_o = 8'b00100100;
-		     8'b11010011: tri_o = 8'b00100110;
-		     8'b11010100: tri_o = 8'b00101000;
-		     8'b11010101: tri_o = 8'b00101010;
-		     8'b11010110: tri_o = 8'b00101100;
-		     8'b11010111: tri_o = 8'b00101110;
-		     8'b11011000: tri_o = 8'b00110000;
-		     8'b11011001: tri_o = 8'b00110010;
-		     8'b11011010: tri_o = 8'b00110100;
-		     8'b11011011: tri_o = 8'b00110110;
-		     8'b11011100: tri_o = 8'b00111000;
-		     8'b11011101: tri_o = 8'b00111010;
-		     8'b11011110: tri_o = 8'b00111100;
-		     8'b11011111: tri_o = 8'b00111110;
-		     8'b11100000: tri_o = 8'b01000000;
-		     8'b11100001: tri_o = 8'b01000010;
-		     8'b11100010: tri_o = 8'b01000100;
-		     8'b11100011: tri_o = 8'b01000110;
-		     8'b11100100: tri_o = 8'b01001000;
-		     8'b11100101: tri_o = 8'b01001010;
-		     8'b11100110: tri_o = 8'b01001100;
-		     8'b11100111: tri_o = 8'b01001110;
-		     8'b11101000: tri_o = 8'b01010000;
-		     8'b11101001: tri_o = 8'b01010010;
-		     8'b11101010: tri_o = 8'b01010100;
-		     8'b11101011: tri_o = 8'b01010110;
-		     8'b11101100: tri_o = 8'b01011000;
-		     8'b11101101: tri_o = 8'b01011010;
-		     8'b11101110: tri_o = 8'b01011100;
-		     8'b11101111: tri_o = 8'b01011110;
-		     8'b11110000: tri_o = 8'b01100000;
-		     8'b11110001: tri_o = 8'b01100010;
-		     8'b11110010: tri_o = 8'b01100100;
-		     8'b11110011: tri_o = 8'b01100110;
-		     8'b11110100: tri_o = 8'b01101000;
-		     8'b11110101: tri_o = 8'b01101010;
-		     8'b11110110: tri_o = 8'b01101100;
-		     8'b11110111: tri_o = 8'b01101110;
-		     8'b11111000: tri_o = 8'b01110000;
-		     8'b11111001: tri_o = 8'b01110010;
-		     8'b11111010: tri_o = 8'b01110100;
-		     8'b11111011: tri_o = 8'b01110110;
-		     8'b11111100: tri_o = 8'b01111000;
-		     8'b11111101: tri_o = 8'b01111010;
-		     8'b11111110: tri_o = 8'b01111100;
-		     8'b11111111: tri_o = 8'b01111110;
-	    endcase // case (address_i)
-   end
-endmodule // tri_lut
+     always @ (*) begin
+        case(address_i)
+           8'b00000000: tri_o = 8'b10000000;
+           8'b00000001: tri_o = 8'b10000010;
+           8'b00000010: tri_o = 8'b10000100;
+           8'b00000011: tri_o = 8'b10000110;
+           8'b00000100: tri_o = 8'b10001000;
+           //Cut for the sake of printing...
+           8'b11111111: tri_o = 8'b01111110;
+        endcase // case (address_i)
+     end
+  endmodule // tri_lut
 #+end_src
 ** TB
 lfsr_tb.v
 #+begin_src verilog
   module lfsr_tb (/*AUTOARG*/) ;
-   parameter TRACE = 1;
+     parameter TRACE = 1;
 
-   reg clk_i_tb;
-   reg rst_i_tb;
-   wire [7:0] rand_o_tb;
-
-
-   lfsr lfsr0(/*AUTOINST*/
-              // Outputs
-              .rand_o                   (rand_o_tb),
-              // Inputs
-              .clk_i                    (clk_i_tb),
-              .rst_i                    (rst_i_tb));
-
-   initial begin
-      clk_i_tb     = 0;
-      rst_i_tb     = 0;
-      #10 rst_i_tb = 1;
-      #10 rst_i_tb = 0;
-      #10000 $finish;
-   end
-
-   initial begin
-      forever begin
-         #10 clk_i_tb = ~clk_i_tb;
-      end
-   end
+     reg clk_i_tb;
+     reg rst_i_tb;
+     wire [7:0] rand_o_tb;
 
 
-   always @ (posedge clk_i_tb) $display("Current Value of Random Out:%d %h", rand_o_tb, rand_o_tb);
+     lfsr lfsr0(/*AUTOINST*/
+                // Outputs
+                .rand_o                   (rand_o_tb),
+                // Inputs
+                .clk_i                    (clk_i_tb),
+                .rst_i                    (rst_i_tb));
 
-   if (TRACE == 1) initial begin
-      $dumpfile("../out/wave_lfsr.vcd");
-      $dumpvars;
-   end
+     initial begin
+        clk_i_tb     = 0;
+        rst_i_tb     = 0;
+        #10 rst_i_tb = 1;
+        #10 rst_i_tb = 0;
+        #10000 $finish;
+     end
 
-endmodule // lfsr_tb
+     initial begin
+        forever begin
+           #10 clk_i_tb = ~clk_i_tb;
+        end
+     end
+
+
+     always @ (posedge clk_i_tb) $display("Current Value of Random Out:%d %h", rand_o_tb, rand_o_tb);
+
+     if (TRACE == 1) initial begin
+        $dumpfile("../out/wave_lfsr.vcd");
+        $dumpvars;
+     end
+
+  endmodule // lfsr_tb
 #+end_src
 
 simple_dds_tb.v
 #+begin_src verilog
- module simple_dds_tb ();
-   parameter SEED = 100;
-   integer seed = SEED;
-   parameter TRACE = 1;
-   parameter TIMEOUT = 50000;
-   parameter WB_CLOCK_PERIOD = 100;
-   parameter WB_CLOCK_HALF_PERIOD = WB_CLOCK_PERIOD / 2;
-   parameter DDS_CLOCK_PERIOD = 10;
-   parameter DDS_CLOCK_HALF_PERIOD = DDS_CLOCK_PERIOD / 2;
+  module simple_dds_tb ();
+     parameter SEED = 100;
+     integer seed = SEED;
+     parameter TRACE = 1;
+     parameter TIMEOUT = 50000;
+     parameter WB_CLOCK_PERIOD = 100;
+     parameter WB_CLOCK_HALF_PERIOD = WB_CLOCK_PERIOD / 2;
+     parameter DDS_CLOCK_PERIOD = 10;
+     parameter DDS_CLOCK_HALF_PERIOD = DDS_CLOCK_PERIOD / 2;
 
-   parameter DATA_WIDTH = 32;
-   parameter ADDR_WIDTH = 16;
-   parameter WAVE_WIDTH = 16;
+     parameter DATA_WIDTH = 32;
+     parameter ADDR_WIDTH = 16;
+     parameter WAVE_WIDTH = 16;
 
-   // Register Address Definitions
-   parameter READY = 32'd0,
-      ENABLE      = 32'd1,
-      DDS_SRC     = 32'd2,
-      TUNING_WORD = 32'd3,
-      GAIN_WORD   = 32'd4,
-      OFFSET_WORD = 32'd5;
+     // Register Address Definitions
+     parameter READY = 32'd0,
+        ENABLE      = 32'd1,
+        DDS_SRC     = 32'd2,
+        TUNING_WORD = 32'd3,
+        GAIN_WORD   = 32'd4,
+        OFFSET_WORD = 32'd5;
 
-   // Register Reset Values
-   parameter READY_RST_VAL = 32'd0,
-      ENABLE_RST_VAL = 32'd0,
-      DDS_SRC_RST_VAL = 32'd0,
-      TUNING_WORD_RST_VAL = 32'd1,
-      GAIN_WORD_RST_VAL = 32'd0,
-      OFFSET_WORD_RST_VAL = 32'h000000FF;
-
-
-   reg wb_clk_i_tb;
-   reg wb_rst_i_tb;
-   reg [DATA_WIDTH-1:0] wb_dat_i_tb;
-   reg [ADDR_WIDTH-1:0] wb_addr_i_tb;
-   reg                  wb_we_i_tb;
-   reg                  wb_stb_i_tb;
-
-   wire [DATA_WIDTH-1:0] wb_dat_o_tb;
-   wire                  wb_ack_o_tb;
-
-   // Misc IO signals
-   reg                   dds_clk_i_tb;
-
-   wire [WAVE_WIDTH-1:0] wave_o_tb;
+     // Register Reset Values
+     parameter READY_RST_VAL = 32'd0,
+        ENABLE_RST_VAL = 32'd0,
+        DDS_SRC_RST_VAL = 32'd0,
+        TUNING_WORD_RST_VAL = 32'd1,
+        GAIN_WORD_RST_VAL = 32'd0,
+        OFFSET_WORD_RST_VAL = 32'h000000FF;
 
 
-   simple_dds #(.DATA_WIDTH(DATA_WIDTH), .ADDR_WIDTH(ADDR_WIDTH), .WAVE_WIDTH(WAVE_WIDTH))
-   dut0(
-        // Outputs
-        .wb_dat_o            (wb_dat_o_tb),
-        .wb_ack_o            (wb_ack_o_tb),
-        .wave_o              (wave_o_tb),
-        // Inputs
-        .wb_clk_i            (wb_clk_i_tb),
-        .wb_rst_i            (wb_rst_i_tb),
-        .wb_dat_i            (wb_dat_i_tb),
-        .wb_addr_i           (wb_addr_i_tb),
-        .wb_we_i             (wb_we_i_tb),
-        .wb_stb_i            (wb_stb_i_tb),
-        .dds_clk_i           (dds_clk_i_tb)
-        );
+     reg     wb_clk_i_tb;
+     reg     wb_rst_i_tb;
+     reg [DATA_WIDTH-1:0] wb_dat_i_tb;
+     reg [ADDR_WIDTH-1:0] wb_addr_i_tb;
+     reg                  wb_we_i_tb;
+     reg                  wb_stb_i_tb;
 
-   // Wave Dump
-   if (TRACE == 1) initial begin
-      $dumpfile("../out/wave_simple_dds.vcd");
-      $dumpvars;
-   end
+     wire [DATA_WIDTH-1:0] wb_dat_o_tb;
+     wire                  wb_ack_o_tb;
 
-   // Watchdog Timeout
-   initial begin
-      #TIMEOUT $finish;
-   end
+     // Misc IO signals
+     reg                   dds_clk_i_tb;
 
-   // DDS Clock Generator
-   initial begin
-      forever #DDS_CLOCK_HALF_PERIOD dds_clk_i_tb = ~dds_clk_i_tb;
-   end
-
-   //// WB Clock Generator
-   initial begin
-      forever #WB_CLOCK_HALF_PERIOD wb_clk_i_tb = ~wb_clk_i_tb;
-   end
-
-   reg [DATA_WIDTH-1:0] read_data;
-   reg [ADDR_WIDTH-1:0] read_addr;
-
-   // DUT Random Register Values
-   reg                  enable_tb;
-   reg [1:0]            dds_src_tb;
-   reg [7:0]           tuning_word_tb;
-   reg [1:0]            gain_word_tb;
-   reg [15:0]           offset_word_tb;
-
-   integer              sample_cntr;
-   initial begin
-      $display("INFO: Testing Register Writes");
-      // Initial Values for Registers-----------------
-      wb_clk_i_tb  = 0;
-      wb_rst_i_tb  = 0;
-      wb_dat_i_tb  = 0;
-      wb_addr_i_tb = 0;
-      wb_we_i_tb   = 0;
-      wb_stb_i_tb  = 0;
-      dds_clk_i_tb = 0;
-
-      read_data    = 0;
-      read_addr    = 0;
-
-      // Reset DUT------------------------------------
-      @ (negedge wb_clk_i_tb);
-      wb_rst_i_tb = 1;
-      repeat (5) @ (posedge wb_clk_i_tb);
-      wb_rst_i_tb = 0;
-      @ (posedge wb_clk_i_tb);
-      // Test Register R/W----------------------------
-      randomize_test();
-      run_reg_test();
-      run_wave_test();
-      #1000 $display("INFO: Test Complete");
-      $finish;
-   end // initial begin
+     wire [WAVE_WIDTH-1:0] wave_o_tb;
 
 
+     simple_dds #(.DATA_WIDTH(DATA_WIDTH), .ADDR_WIDTH(ADDR_WIDTH), .WAVE_WIDTH(WAVE_WIDTH))
+     dut0(
+          // Outputs
+          .wb_dat_o            (wb_dat_o_tb),
+          .wb_ack_o            (wb_ack_o_tb),
+          .wave_o              (wave_o_tb),
+          // Inputs
+          .wb_clk_i            (wb_clk_i_tb),
+          .wb_rst_i            (wb_rst_i_tb),
+          .wb_dat_i            (wb_dat_i_tb),
+          .wb_addr_i           (wb_addr_i_tb),
+          .wb_we_i             (wb_we_i_tb),
+          .wb_stb_i            (wb_stb_i_tb),
+          .dds_clk_i           (dds_clk_i_tb)
+          );
 
-   task wb_write(input [ADDR_WIDTH-1:0] addr, input [DATA_WIDTH-1:0] data);
-      begin
-         $display("INFO: WB Writing 0x%h to 0x%h", data, addr);
+     // Wave Dump
+     if (TRACE == 1) initial begin
+        $dumpfile("../out/wave_simple_dds.vcd");
+        $dumpvars;
+     end
 
-         @ (negedge wb_clk_i_tb); // Sync to non sample edge
-         wb_we_i_tb   = 1;
-         wb_addr_i_tb = addr;
-         wb_dat_i_tb  = data;
-         wb_stb_i_tb = 1;
-         @ (posedge wb_clk_i_tb); // Write to the DUT
-         @ (posedge wb_clk_i_tb); // Get an ACK next cycle
-         if (wb_ack_o_tb) $display("INFO: WB Wrote 0x%h to 0x%h", data, addr);
-         else $display("ERROR: WB Write %h to 0x%h failed. No ACK", data, addr); wb_stb_i_tb = 0; // TR over
-      end
-   endtask // wb_write
+     // Watchdog Timeout
+     initial begin
+        #TIMEOUT $finish;
+     end
 
-   task wb_read(input [ADDR_WIDTH-1:0] addr, output [DATA_WIDTH-1:0] data);
-      begin
-         $display("INFO: WB read from 0x%h", addr);
+     // DDS Clock Generator
+     initial begin
+        forever #DDS_CLOCK_HALF_PERIOD dds_clk_i_tb = ~dds_clk_i_tb;
+     end
 
-         @ (negedge wb_clk_i_tb); // Sync to non sample edge
-         wb_we_i_tb   = 0;
-         wb_addr_i_tb = addr;
-         wb_stb_i_tb = 1;
-         @ (posedge wb_clk_i_tb); // Write to the DUT
-         @ (posedge wb_clk_i_tb); // Get an ACK next cycle and read data
-         data = wb_dat_o_tb;
-         if (wb_ack_o_tb) $display("INFO: WB read 0x%h from 0x%h", data, addr);
-         else $display("ERROR: WB Read from 0x%h failed. No ACK", addr);
-         wb_stb_i_tb = 0; // TR over
-      end
-   endtask // wb_read
+     //// WB Clock Generator
+     initial begin
+        forever #WB_CLOCK_HALF_PERIOD wb_clk_i_tb = ~wb_clk_i_tb;
+     end
 
-   task run_reg_test();
-      begin
+     reg [DATA_WIDTH-1:0] read_data;
+     reg [ADDR_WIDTH-1:0] read_addr;
 
-         // Ensure DUT Reset Complete and DUT is ready
-         while(read_data !== 32'd1) begin
-            wb_read(READY, read_data);
-         end
+     // DUT Random Register Values
+     reg                  enable_tb;
+     reg [1:0]            dds_src_tb;
+     reg [7:0]            tuning_word_tb;
+     reg [1:0]            gain_word_tb;
+     reg [15:0]           offset_word_tb;
 
-         // Read and assert proper reset values
-         wb_read(ENABLE, read_data);
-         if(!(read_data === ENABLE_RST_VAL)) $display("ERROR: ENABLE reset to wrong value: 0x%h", read_data);
-         wb_read(DDS_SRC, read_data);
-         if(!(read_data === DDS_SRC_RST_VAL)) $display("ERROR: DDS_SRC reset to wrong value: 0x%h", read_data);
-         wb_read(TUNING_WORD, read_data);
-         if(!(read_data === TUNING_WORD_RST_VAL)) $display("ERROR: TUNING_WORD reset to wrong value: 0x%h", read_data);
-         wb_read(GAIN_WORD, read_data);
-         if(!(read_data === GAIN_WORD_RST_VAL)) $display("ERROR: GAIN_WORD reset to wrong value: 0x%h", read_data);
-         wb_read(OFFSET_WORD, read_data);
-         if(!(read_data === OFFSET_WORD_RST_VAL)) $display("ERROR: OFFSET_WORD reset to wrong value: 0x%h", read_data);
+     integer              sample_cntr;
+     initial begin
+        $display("INFO: Testing Register Writes");
+        // Initial Values for Registers-----------------
+        wb_clk_i_tb  = 0;
+        wb_rst_i_tb  = 0;
+        wb_dat_i_tb  = 0;
+        wb_addr_i_tb = 0;
+        wb_we_i_tb   = 0;
+        wb_stb_i_tb  = 0;
+        dds_clk_i_tb = 0;
 
-         // Set
-         wb_write(READY, 32'hffff_ffff);
-         wb_write(ENABLE, 32'hffff_ffff);
-         wb_write(DDS_SRC, 32'hffff_ffff);
-         wb_write(TUNING_WORD, 32'hffff_ffff);
-         wb_write(GAIN_WORD, 32'hffff_ffff);
-         wb_write(OFFSET_WORD, 32'hffff_ffff);
+        read_data    = 0;
+        read_addr    = 0;
 
-         // Read and assert proper bit fields were set
-         wb_read(ENABLE, read_data);
-         if(!(read_data[0] === 1'b1)) $display("ERROR: ENABLE reset to wrong value: 0x%h", read_data);
-         wb_read(DDS_SRC, read_data);
-         if(!(read_data[1:0] === 2'b11)) $display("ERROR: DDS_SRC reset to wrong value: 0x%h", read_data);
-         wb_read(TUNING_WORD, read_data);
-         if(!(read_data[7:0] === 8'hff)) $display("ERROR: TUNING_WORD reset to wrong value: 0x%h", read_data);
-         wb_read(GAIN_WORD, read_data);
-         if(!(read_data[1:0] === 2'b11)) $display("ERROR: GAIN_WORD reset to wrong value: 0x%h", read_data);
-         wb_read(OFFSET_WORD, read_data);
-         if(!(read_data[15:0] === 16'hffff)) $display("ERROR: OFFSET_WORD reset to wrong value: 0x%h", read_data);
-
-         // Clear
-         wb_write(READY, 32'd0);
-         wb_write(ENABLE, 32'd0);
-         wb_write(DDS_SRC, 32'd0);
-         wb_write(TUNING_WORD, 32'd0);
-         wb_write(GAIN_WORD, 32'd0);
-         wb_write(OFFSET_WORD, 32'd0);
-
-         // Read and assert proper bit fields were cleared
-         wb_read(ENABLE, read_data);
-         if(!(read_data[0] === 1'b0)) $display("ERROR: ENABLE reset to wrong value: 0x%h", read_data);
-         wb_read(DDS_SRC, read_data);
-         if(!(read_data[1:0] === 2'b00)) $display("ERROR: DDS_SRC reset to wrong value: 0x%h", read_data);
-         wb_read(TUNING_WORD, read_data);
-         if(!(read_data[7:0] === 8'h00)) $display("ERROR: TUNING_WORD reset to wrong value: 0x%h", read_data);
-         wb_read(GAIN_WORD, read_data);
-         if(!(read_data[1:0] === 2'b00)) $display("ERROR: GAIN_WORD reset to wrong value: 0x%h", read_data);
-         wb_read(OFFSET_WORD, read_data);
-         if(!(read_data[15:0] === 16'h0000)) $display("ERROR: OFFSET_WORD reset to wrong value: 0x%h", read_data);
-      end
-   endtask // run_reg_test
+        // Reset DUT------------------------------------
+        @ (negedge wb_clk_i_tb);
+        wb_rst_i_tb = 1;
+        repeat (5) @ (posedge wb_clk_i_tb);
+        wb_rst_i_tb = 0;
+        @ (posedge wb_clk_i_tb);
+        // Test Register R/W----------------------------
+        randomize_test();
+        run_reg_test();
+        run_wave_test();
+        #1000 $display("INFO: Test Complete");
+        $finish;
+     end // initial begin
 
 
-   integer rand_1;
-   integer rand_2;
-   task randomize_test();
-      begin
-         // Randomize Test Environment and Print It To Log
-         rand_1         = $urandom(seed);
-         rand_2         = $urandom(seed);
-         //dds_src_tb     = {30'd0, rand_1[1:0]};
-         //tuning_word_tb = {24'd0, rand_2[23:16]};
-         //gain_word_tb   = {30'd0, rand_1[3:2]};
-         //offset_word_tb = {16'd0, rand_2[15:0]};
 
-         // Temp Overrides
-         dds_src_tb     = {30'd0, 2'b00};
-         tuning_word_tb = {24'd0, 7'h01};
-         gain_word_tb   = {30'd0, 2'b00};
-         offset_word_tb = 16'h7fff;
+     task wb_write(input [ADDR_WIDTH-1:0] addr, input [DATA_WIDTH-1:0] data);
+        begin
+           $display("INFO: WB Writing 0x%h to 0x%h", data, addr);
 
-         $display("---------------------------------------------------------------------------");
-         case(dds_src_tb[1:0])
-            2'b00 : $display("INFO: DDS_SRC: SINE");
-            2'b01 : $display("INFO: DDS_SRC: SAW");
-            2'b10 : $display("INFO: DDS_SRC: TRI");
-            2'b11 : $display("INFO: DDS_SRC: RAND");
-         endcase // case (dds_src_tb[1:0])
-         $display("INFO: TUNING_WORD 0x%h", tuning_word_tb[7:0]);
-         case(gain_word_tb[1:0])
-            2'b00 : $display("INFO GAIN_WORD: x1");
-            2'b01 : $display("INFO GAIN_WORD: x2");
-            2'b10 : $display("INFO GAIN_WORD: x4");
-            2'b11 : $display("INFO GAIN_WORD: x8");
-         endcase
-         $display("INFO: OFFSET_WORD 0x%h", offset_word_tb[15:0]);
-         $display("---------------------------------------------------------------------------");
-      end
-   endtask // randomize_test
+           @ (negedge wb_clk_i_tb); // Sync to non sample edge
+           wb_we_i_tb   = 1;
+           wb_addr_i_tb = addr;
+           wb_dat_i_tb  = data;
+           wb_stb_i_tb = 1;
+           @ (posedge wb_clk_i_tb); // Write to the DUT
+           @ (posedge wb_clk_i_tb); // Get an ACK next cycle
+           if (wb_ack_o_tb) $display("INFO: WB Wrote 0x%h to 0x%h", data, addr);
+           else $display("ERROR: WB Write %h to 0x%h failed. No ACK", data, addr); wb_stb_i_tb = 0; // TR over
+        end
+     endtask // wb_write
 
-   task run_wave_test();
-      begin
-         wb_write(DDS_SRC, dds_src_tb);
-         wb_write(TUNING_WORD, tuning_word_tb);
-         wb_write(GAIN_WORD, gain_word_tb);
-         wb_write(OFFSET_WORD, offset_word_tb);
-         wb_write(ENABLE, 32'd1);
-         for(sample_cntr = 0; sample_cntr < 500 ; sample_cntr++) begin
-            @ (posedge dds_clk_i_tb) $display("INFO: sample:%d value:%d", sample_cntr, wave_o_tb);
-         end
-      end
-   endtask // run_test
+     task wb_read(input [ADDR_WIDTH-1:0] addr, output [DATA_WIDTH-1:0] data);
+        begin
+           $display("INFO: WB read from 0x%h", addr);
 
-endmodule // simple_dds_tb
+           @ (negedge wb_clk_i_tb); // Sync to non sample edge
+           wb_we_i_tb   = 0;
+           wb_addr_i_tb = addr;
+           wb_stb_i_tb = 1;
+           @ (posedge wb_clk_i_tb); // Write to the DUT
+           @ (posedge wb_clk_i_tb); // Get an ACK next cycle and read data
+           data = wb_dat_o_tb;
+           if (wb_ack_o_tb) $display("INFO: WB read 0x%h from 0x%h", data, addr);
+           else $display("ERROR: WB Read from 0x%h failed. No ACK", addr);
+           wb_stb_i_tb = 0; // TR over
+        end
+     endtask // wb_read
+
+     task run_reg_test();
+        begin
+
+           // Ensure DUT Reset Complete and DUT is ready
+           while(read_data !== 32'd1) begin
+              wb_read(READY, read_data);
+           end
+
+           // Read and assert proper reset values
+           wb_read(ENABLE, read_data);
+           if(!(read_data === ENABLE_RST_VAL)) $display("ERROR: ENABLE reset to wrong value: 0x%h", read_data);
+           wb_read(DDS_SRC, read_data);
+           if(!(read_data === DDS_SRC_RST_VAL)) $display("ERROR: DDS_SRC reset to wrong value: 0x%h", read_data);
+           wb_read(TUNING_WORD, read_data);
+           if(!(read_data === TUNING_WORD_RST_VAL)) $display("ERROR: TUNING_WORD reset to wrong value: 0x%h", read_data);
+           wb_read(GAIN_WORD, read_data);
+           if(!(read_data === GAIN_WORD_RST_VAL)) $display("ERROR: GAIN_WORD reset to wrong value: 0x%h", read_data);
+           wb_read(OFFSET_WORD, read_data);
+           if(!(read_data === OFFSET_WORD_RST_VAL)) $display("ERROR: OFFSET_WORD reset to wrong value: 0x%h", read_data);
+
+           // Set
+           wb_write(READY, 32'hffff_ffff);
+           wb_write(ENABLE, 32'hffff_ffff);
+           wb_write(DDS_SRC, 32'hffff_ffff);
+           wb_write(TUNING_WORD, 32'hffff_ffff);
+           wb_write(GAIN_WORD, 32'hffff_ffff);
+           wb_write(OFFSET_WORD, 32'hffff_ffff);
+
+           // Read and assert proper bit fields were set
+           wb_read(ENABLE, read_data);
+           if(!(read_data[0] === 1'b1)) $display("ERROR: ENABLE reset to wrong value: 0x%h", read_data);
+           wb_read(DDS_SRC, read_data);
+           if(!(read_data[1:0] === 2'b11)) $display("ERROR: DDS_SRC reset to wrong value: 0x%h", read_data);
+           wb_read(TUNING_WORD, read_data);
+           if(!(read_data[7:0] === 8'hff)) $display("ERROR: TUNING_WORD reset to wrong value: 0x%h", read_data);
+           wb_read(GAIN_WORD, read_data);
+           if(!(read_data[1:0] === 2'b11)) $display("ERROR: GAIN_WORD reset to wrong value: 0x%h", read_data);
+           wb_read(OFFSET_WORD, read_data);
+           if(!(read_data[15:0] === 16'hffff)) $display("ERROR: OFFSET_WORD reset to wrong value: 0x%h", read_data);
+
+           // Clear
+           wb_write(READY, 32'd0);
+           wb_write(ENABLE, 32'd0);
+           wb_write(DDS_SRC, 32'd0);
+           wb_write(TUNING_WORD, 32'd0);
+           wb_write(GAIN_WORD, 32'd0);
+           wb_write(OFFSET_WORD, 32'd0);
+
+           // Read and assert proper bit fields were cleared
+           wb_read(ENABLE, read_data);
+           if(!(read_data[0] === 1'b0)) $display("ERROR: ENABLE reset to wrong value: 0x%h", read_data);
+           wb_read(DDS_SRC, read_data);
+           if(!(read_data[1:0] === 2'b00)) $display("ERROR: DDS_SRC reset to wrong value: 0x%h", read_data);
+           wb_read(TUNING_WORD, read_data);
+           if(!(read_data[7:0] === 8'h00)) $display("ERROR: TUNING_WORD reset to wrong value: 0x%h", read_data);
+           wb_read(GAIN_WORD, read_data);
+           if(!(read_data[1:0] === 2'b00)) $display("ERROR: GAIN_WORD reset to wrong value: 0x%h", read_data);
+           wb_read(OFFSET_WORD, read_data);
+           if(!(read_data[15:0] === 16'h0000)) $display("ERROR: OFFSET_WORD reset to wrong value: 0x%h", read_data);
+        end
+     endtask // run_reg_test
+
+
+     integer rand_1;
+     integer rand_2;
+     task randomize_test();
+        begin
+           // Randomize Test Environment and Print It To Log
+           rand_1         = $urandom(seed);
+           rand_2         = $urandom(seed);
+           //dds_src_tb     = {30'd0, rand_1[1:0]};
+           //tuning_word_tb = {24'd0, rand_2[23:16]};
+           //gain_word_tb   = {30'd0, rand_1[3:2]};
+           //offset_word_tb = {16'd0, rand_2[15:0]};
+
+           // Temp Overrides
+           dds_src_tb     = {30'd0, 2'b00};
+           tuning_word_tb = {24'd0, 7'h01};
+           gain_word_tb   = {30'd0, 2'b00};
+           offset_word_tb = 16'h7fff;
+
+           $display("---------------------------------------------------------------------------");
+           case(dds_src_tb[1:0])
+              2'b00 : $display("INFO: DDS_SRC: SINE");
+              2'b01 : $display("INFO: DDS_SRC: SAW");
+              2'b10 : $display("INFO: DDS_SRC: TRI");
+              2'b11 : $display("INFO: DDS_SRC: RAND");
+           endcase // case (dds_src_tb[1:0])
+           $display("INFO: TUNING_WORD 0x%h", tuning_word_tb[7:0]);
+           case(gain_word_tb[1:0])
+              2'b00 : $display("INFO GAIN_WORD: x1");
+              2'b01 : $display("INFO GAIN_WORD: x2");
+              2'b10 : $display("INFO GAIN_WORD: x4");
+              2'b11 : $display("INFO GAIN_WORD: x8");
+           endcase
+           $display("INFO: OFFSET_WORD 0x%h", offset_word_tb[15:0]);
+           $display("---------------------------------------------------------------------------");
+        end
+     endtask // randomize_test
+
+     task run_wave_test();
+        begin
+           wb_write(DDS_SRC, dds_src_tb);
+           wb_write(TUNING_WORD, tuning_word_tb);
+           wb_write(GAIN_WORD, gain_word_tb);
+           wb_write(OFFSET_WORD, offset_word_tb);
+           wb_write(ENABLE, 32'd1);
+           for(sample_cntr = 0; sample_cntr < 500 ; sample_cntr++) begin
+              @ (posedge dds_clk_i_tb) $display("INFO: sample:%d value:%d", sample_cntr, wave_o_tb);
+           end
+        end
+     endtask // run_test
+
+  endmodule // simple_dds_tb
 #+end_src
 ** Python
 plot_results.py
 #+begin_src python
   #!/bin/usr/python3
 
-import re
-import glob
-import os
-from matplotlib import pyplot as plt
+  import re
+  import glob
+  import os
+  from matplotlib import pyplot as plt
 
-values = []
-list_of_files = glob.glob('/home/patrick/ws/school/verilog_and_vhdl/simple_dds/sim/rtl_sim/log/simple_dds*') # * means all if need specific format then *.csv
-latest_file = max(list_of_files, key=os.path.getctime)
-print("Graphing " + latest_file)
-
-
-regex = re.compile("value:.*")
-with open(latest_file) as f:
-    for line in f:
-        result = regex.search(line);
-        if result is not None:
-            print(result.group(0))
-            print(result.group(0)[6:].lstrip())
-            values.append(int(result.group(0)[6:].lstrip()))
+  values = []
+  list_of_files = glob.glob('/home/patrick/ws/school/verilog_and_vhdl/simple_dds/sim/rtl_sim/log/simple_dds*') # * means all if need specific format then *.csv
+  latest_file = max(list_of_files, key=os.path.getctime)
+  print("Graphing " + latest_file)
 
 
-plt.plot(values)
-plt.xlabel("Sample")
-plt.ylabel("Value")
-plt.title("Simple DDS Output")
-plt.savefig("plot.png")
-plt.show()
+  regex = re.compile("value:.*")
+  with open(latest_file) as f:
+      for line in f:
+          result = regex.search(line);
+          if result is not None:
+              print(result.group(0))
+              print(result.group(0)[6:].lstrip())
+              values.append(int(result.group(0)[6:].lstrip()))
+
+
+  plt.plot(values)
+  plt.xlabel("Sample")
+  plt.ylabel("Value")
+  plt.title("Simple DDS Output")
+  plt.savefig("plot.png")
+  plt.show()
 #+end_src
 ** Makefile
 Makefile
 #+begin_src makefile
-# Makefile for the simple_dds core. Handles testbench and linting.
-# Author: Patrick Hoey
+  # Makefile for the simple_dds core. Handles testbench and linting.
+  # Author: Patrick Hoey
 
 
-SHELL=bash
-CC=iverilog
-CCR=vvp
+  SHELL=bash
+  CC=iverilog
+  CCR=vvp
 
-RTL_FOLDER=$(shell cd ../../rtl/verilog; pwd)
-TB_FOLDER=$(shell cd ./src; pwd)
-SW_FOLDER=$(shell cd ../../sw; pwd)
-
-
-all: simple_dds
-
-lint_all: lint_simple_dds
-
-lint_simple_dds:
-	@verilator --lint-only --Wall $(RTL_FOLDER)/simple_dds && echo "LINT: OK"
-
-simple_dds:
-	@$(CC) -o ./run/simple_dds.tb $(TB_FOLDER)/simple_dds_tb.v $(RTL_FOLDER)/simple_dds.v $(RTL_FOLDER)/dds_core.v $(RTL_FOLDER)/sine_lut.v $(RTL_FOLDER)/tri_lut.v $(RTL_FOLDER)/saw_lut.v $(RTL_FOLDER)/lfsr.v;
-		@cd ./run && $(CCR) simple_dds.tb | tee ../log/simple_dds_log_$$(date +%Y%m%d%H%M%S).tb;
-
-wave_simple_dds: simple_dds
-	@gtkwave out/wave_simple_dds.vcd
-
-plot_simple_dds: simple_dds
-	@python3 $(SW_FOLDER)/plot_results.py
-
-lint_lfsr:
-	@verilator --lint-only --Wall $(RTL_FOLDER)/lfsr && echo "LINT: OK"
-
-lfsr:
-	@$(CC) -o ./run/lfsr.tb $(TB_FOLDER)/lfsr_tb.v $(RTL_FOLDER)/lfsr.v
-	@cd ./run && $(CCR) lfsr.tb | tee ../log/lfsr_log_$$(date +%Y%m%d%H%M%S).tb;
-
-wave_lfsr: lfsr
-	@gtkwave out/wave_lfsr.vcd
+  RTL_FOLDER=$(shell cd ../../rtl/verilog; pwd)
+  TB_FOLDER=$(shell cd ./src; pwd)
+  SW_FOLDER=$(shell cd ../../sw; pwd)
 
 
+  all: simple_dds
 
-clean:
-	@rm -rf log/*.tb log/*.vcd
-	@rm -rf run/*.tb run/*.vcd
-	@rm -rf out/*.tb out/*.vcd
+  lint_all: lint_simple_dds
+
+  lint_simple_dds:
+  @verilator --lint-only --Wall $(RTL_FOLDER)/simple_dds && echo "LINT: OK"
+
+  simple_dds:
+  @$(CC) -o ./run/simple_dds.tb $(TB_FOLDER)/simple_dds_tb.v $(RTL_FOLDER)/simple_dds.v $(RTL_FOLDER)/dds_core.v $(RTL_FOLDER)/sine_lut.v $(RTL_FOLDER)/tri_lut.v $(RTL_FOLDER)/saw_lut.v $(RTL_FOLDER)/lfsr.v;
+  @cd ./run && $(CCR) simple_dds.tb | tee ../log/simple_dds_log_$$(date +%Y%m%d%H%M%S).tb;
+
+  wave_simple_dds: simple_dds
+  @gtkwave out/wave_simple_dds.vcd
+
+  plot_simple_dds: simple_dds
+  @python3 $(SW_FOLDER)/plot_results.py
+
+  lint_lfsr:
+  @verilator --lint-only --Wall $(RTL_FOLDER)/lfsr && echo "LINT: OK"
+
+  lfsr:
+  @$(CC) -o ./run/lfsr.tb $(TB_FOLDER)/lfsr_tb.v $(RTL_FOLDER)/lfsr.v
+  @cd ./run && $(CCR) lfsr.tb | tee ../log/lfsr_log_$$(date +%Y%m%d%H%M%S).tb;
+
+  wave_lfsr: lfsr
+  @gtkwave out/wave_lfsr.vcd
 
 
+
+  clean:
+  @rm -rf log/*.tb log/*.vcd
+  @rm -rf run/*.tb run/*.vcd
+  @rm -rf out/*.tb out/*.vcd
 #+end_src
-
 

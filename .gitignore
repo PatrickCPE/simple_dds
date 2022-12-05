@@ -6,3 +6,4 @@ doc/src/*.html
 doc/src/*.tex
 doc/src/*.pdf
 *.swp
+.mypy_cache
