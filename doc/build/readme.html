@@ -1,0 +1,2055 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2022-12-04 Sun 21:44 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Simple DDS Specification - Patrick Hoey</title>
+<meta name="author" content="Patrick Hoey" />
+<meta name="description" content="A small DDS core capable of generating sin or arbitrary waves based upon configuration." />
+<meta name="generator" content="Org Mode" />
+<style>
+  #content { max-width: 60em; margin: auto; }
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #e6e6e6;
+    border-radius: 3px;
+    background-color: #f2f2f2;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: auto;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    top: -8px;
+    right: 12px;
+    padding: 3px;
+    color: #555;
+    background-color: #f2f2f299;
+  }
+  pre.src:hover:before { display: inline; margin-top: 14px;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-authinfo::before { content: 'Authinfo'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .equation-container {
+    display: table;
+    text-align: center;
+    width: 100%;
+  }
+  .equation {
+    vertical-align: middle;
+  }
+  .equation-label {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+</style>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        displayAlign: "center",
+        displayIndent: "0em",
+
+        "HTML-CSS": { scale: 100,
+                        linebreaks: { automatic: "false" },
+                        webFont: "TeX"
+                       },
+        SVG: {scale: 100,
+              linebreaks: { automatic: "false" },
+              font: "TeX"},
+        NativeMML: {scale: 100},
+        TeX: { equationNumbers: {autoNumber: "AMS"},
+               MultLineWidth: "85%",
+               TagSide: "right",
+               TagIndent: ".8em"
+             }
+});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+<body>
+<div id="content" class="content">
+<h1 class="title">Simple DDS Specification - Patrick Hoey</h1>
+<div id="table-of-contents" role="doc-toc">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents" role="doc-toc">
+<ul>
+<li><a href="#orgd81750a">1. Overview</a></li>
+<li><a href="#org0218e9f">2. Architecture</a></li>
+<li><a href="#org07d1239">3. Operation</a></li>
+<li><a href="#orgaab28fe">4. Registers and Memory</a>
+<ul>
+<li><a href="#org785978d">4.1. Registers</a></li>
+<li><a href="#orge08e1f8">4.2. LUTs</a></li>
+</ul>
+</li>
+<li><a href="#org6fcc140">5. Clocks</a></li>
+<li><a href="#org7d62395">6. IO Ports</a></li>
+<li><a href="#org8074586">7. Design</a>
+<ul>
+<li><a href="#orgffb6d3e">7.1. Design Overview</a>
+<ul>
+<li><a href="#org2183531">7.1.1. Lint Warning Wavers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#org82ad980">8. Verification</a>
+<ul>
+<li><a href="#orgf32e110">8.1. Verification Plan</a>
+<ul>
+<li><a href="#orge22d454">8.1.1. Verification Methodology</a></li>
+<li><a href="#org6cf50ee">8.1.2. Functional Coverage</a></li>
+</ul>
+</li>
+<li><a href="#orga168965">8.2. Verification Results</a>
+<ul>
+<li><a href="#org01ab679">8.2.1. Simple_DDS Example Waveforms</a></li>
+<li><a href="#org1e1eab4">8.2.2. Simple DDS Log Results</a></li>
+<li><a href="#org2e93fce">8.2.3. DDS testing Results Results</a></li>
+<li><a href="#org7edec14">8.2.4. Final Results</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#org8f3aec9">9. Revision History</a></li>
+<li><a href="#org01d12ed">10. Appendices</a>
+<ul>
+<li><a href="#org1e12439">10.1. Resources &amp; References</a>
+<ul>
+<li><a href="#orgb9f2390">10.1.1. ADI - All About Direct Digital Synthesis</a></li>
+<li><a href="#orgd8d97bb">10.1.2. Open Cores Specification Template</a></li>
+<li><a href="#orge89c864">10.1.3. Open Cores Coding Guideline</a></li>
+<li><a href="#orgdcd988b">10.1.4. Open Cores Wishbone B4 Specification</a></li>
+<li><a href="#org1df082a">10.1.5. ZipCPU - Wishbone Slave Guide</a></li>
+<li><a href="#org97b0560">10.1.6. Sin Table Generation and Guide</a></li>
+<li><a href="#orgef3c2ea">10.1.7. LFSR Guide</a></li>
+<li><a href="#org7d13a64">10.1.8. Generate LUTs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#org33a6154">11. Code</a>
+<ul>
+<li><a href="#orgf16675b">11.1. RTL</a></li>
+<li><a href="#orgad970dc">11.2. TB</a></li>
+<li><a href="#org4f7d718">11.3. Python</a></li>
+<li><a href="#org9cb552e">11.4. Makefile</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<hr />
+<div id="outline-container-orgd81750a" class="outline-2">
+<h2 id="orgd81750a"><span class="section-number-2">1.</span> Overview</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Simple DDS Specification
+</p>
+
+<p>
+Author: Patrick Hoey
+</p>
+
+<p>
+Email: patrickrhoey@gmail.com
+</p>
+
+<p>
+Date: 2022-12-04
+</p>
+
+<p>
+Revision: 1.0
+</p>
+
+<p>
+Description:
+DDS (Direct Digital Synthesis) core capable of waveform generation. The core has a Wishbone B4 Classic bus interface.
+</p>
+<hr />
+</div>
+</div>
+<div id="outline-container-org0218e9f" class="outline-2">
+<h2 id="org0218e9f"><span class="section-number-2">2.</span> Architecture</h2>
+<div class="outline-text-2" id="text-2">
+
+<div id="org0ea83c2" class="figure">
+<p><img src="simple_dds.png" alt="simple_dds.png" />
+</p>
+<p><span class="figure-number">Figure 1: </span>Simple DDS Block Diagram</p>
+</div>
+<hr />
+</div>
+</div>
+<div id="outline-container-org07d1239" class="outline-2">
+<h2 id="org07d1239"><span class="section-number-2">3.</span> Operation</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+A Direct Digital Synthesizer (DDS) is a method of generating a variable frequency waveform via a digital method. It operates via a tuning word, an input clock, a phase accumulator, and a look up table(LUT).
+</p>
+
+<p>
+The DDS core has a pointer(the phase accumulator) that will reference a location in one of the LUTs. This LUT contains the data for a waveform (for example the values of Sine).
+Your tuning word is a measure of how many addresses to increment every time your DDS clock edge occurs(overflow returns you to the start of the LUT).
+Therefore your DDS will iterate through the LUT faster with a higher valued tuning word based, at the cost of hitting less values.
+</p>
+
+
+<div id="org56ca5d9" class="figure">
+<p><img src="phase_acccumulator.png" alt="phase_acccumulator.png" />
+</p>
+<p><span class="figure-number">Figure 2: </span>Phase accumulator diagram</p>
+</div>
+
+<p>
+Therein is your trade-off with a DDS. You can iterate through the waveform shape slowly with very high precision and a slow output frequency, or iterate through it quickly with less precision and a high output frequency. 
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-left">variable</td>
+<td class="org-left">description</td>
+</tr>
+
+<tr>
+<td class="org-left">\(f_{out}\)</td>
+<td class="org-left">output frequency of your signal</td>
+</tr>
+
+<tr>
+<td class="org-left">M</td>
+<td class="org-left">Tuning word value (Magnitude of jumps on your phase accumulator)</td>
+</tr>
+
+<tr>
+<td class="org-left">\(f_{dds\_clk}\)</td>
+<td class="org-left">Frequency of your input clock to the DDS core</td>
+</tr>
+
+<tr>
+<td class="org-left">n</td>
+<td class="org-left">Width of your phase accumulator</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+\(f_{out} = {{M * f_{dds\_clk}} / 2^n}\)
+</p>
+
+<p>
+This particular core has 4 LUTs you can iterate through. A sine wave, a sawtooth wave, a random wave(which isn't truly a LUT), and a user defined wave that you can program into RAM via the interface. \
+There is also a gain and offset register that the user can program to modify the output signal. The output signal pipes directly into a DAC to create your waveform.
+</p>
+
+<p>
+This core communicates with external IP via a Wishbone B4 Classic Bus. See references to access the specification.
+</p>
+
+
+<div id="org7851156" class="figure">
+<p><img src="reset_seq.png" alt="reset_seq.png" />
+</p>
+<p><span class="figure-number">Figure 3: </span>Reset Sequence</p>
+</div>
+
+<p>
+Reset: Reset must be asserted for at least one clock cycle. It may be asserted any length of clock cycles.
+</p>
+
+<p>
+Read: wb_stb_i, wb_we_i, and wb_addr_i must be ready before the rising edge of wb_clk_i.
+      wb_dat_o and wb_ack will become valid some time before the next bclk edge and will remain valid for one clock. 
+</p>
+
+<p>
+Write: This is effectively the same as a read except wb_we_i is driven high.
+wb_ack_o will be driven high on the next cycle if the write was successful. 
+</p>
+
+
+<div id="orgd1a1bc5" class="figure">
+<p><img src="read_seq.png" alt="read_seq.png" />
+</p>
+<p><span class="figure-number">Figure 4: </span>Read Sequence</p>
+</div>
+
+
+
+<div id="org6599179" class="figure">
+<p><img src="write_seq.png" alt="write_seq.png" />
+</p>
+<p><span class="figure-number">Figure 5: </span>Write Sequence</p>
+</div>
+<hr />
+</div>
+</div>
+<div id="outline-container-orgaab28fe" class="outline-2">
+<h2 id="orgaab28fe"><span class="section-number-2">4.</span> Registers and Memory</h2>
+<div class="outline-text-2" id="text-4">
+</div>
+<div id="outline-container-org785978d" class="outline-3">
+<h3 id="org785978d"><span class="section-number-3">4.1.</span> Registers</h3>
+<div class="outline-text-3" id="text-4-1">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-right" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-right" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-left">register name</td>
+<td class="org-right">register address</td>
+<td class="org-left">Bit Map</td>
+<td class="org-left">R/W</td>
+<td class="org-left">Description</td>
+<td class="org-right">Initial Value</td>
+</tr>
+
+<tr>
+<td class="org-left">ready</td>
+<td class="org-right">0x000</td>
+<td class="org-left">{[31:1] reserved, [0] ready}</td>
+<td class="org-left">R</td>
+<td class="org-left">Will assert high once core can begin operation following a reset</td>
+<td class="org-right">0x00000000</td>
+</tr>
+
+<tr>
+<td class="org-left">enable</td>
+<td class="org-right">0x001</td>
+<td class="org-left">{[31:1] reserved, [0] enable}</td>
+<td class="org-left">R/W</td>
+<td class="org-left">Enables DDS operation once written. Ready must be high before you can write to this</td>
+<td class="org-right">0x00000000</td>
+</tr>
+
+<tr>
+<td class="org-left">dds_src</td>
+<td class="org-right">0x002</td>
+<td class="org-left">{[31:2] reserved, [1:0] dds_src}</td>
+<td class="org-left">R/W</td>
+<td class="org-left">Indicates the source of the dds signal. 0=Sine, 1=Sawtooth, 2 = Triangle, 3=Random</td>
+<td class="org-right">0x00000000</td>
+</tr>
+
+<tr>
+<td class="org-left">tuning_word</td>
+<td class="org-right">0x003</td>
+<td class="org-left">{[31:8] reserved, [7:0] tuning_word}</td>
+<td class="org-left">R/W</td>
+<td class="org-left">Tuning word for the DDS phase accumulator</td>
+<td class="org-right">0x00000001</td>
+</tr>
+
+<tr>
+<td class="org-left">gain_word</td>
+<td class="org-right">0x004</td>
+<td class="org-left">{[31:2] reserved, [1:0] gain_word}</td>
+<td class="org-left">R/W</td>
+<td class="org-left">Multiplier for gain. Gain is a multiple of 2 so setting gain_word = 0x3 -&gt; 2^3 -&gt; x8</td>
+<td class="org-right">0x00000000</td>
+</tr>
+
+<tr>
+<td class="org-left">offset_word</td>
+<td class="org-right">0x005</td>
+<td class="org-left">{31:16} reserved, [15:0] offset_word</td>
+<td class="org-left">R/W</td>
+<td class="org-left">Offset to be added to the result.</td>
+<td class="org-right">0x00007FFF</td>
+</tr>
+</tbody>
+</table>
+
+<hr />
+</div>
+</div>
+<div id="outline-container-orge08e1f8" class="outline-3">
+<h3 id="orge08e1f8"><span class="section-number-3">4.2.</span> LUTs</h3>
+<div class="outline-text-3" id="text-4-2">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-left">LUT</td>
+<td class="org-right">LUT Width</td>
+<td class="org-right">LUT Data Width</td>
+<td class="org-right">Data Width</td>
+<td class="org-left">Description</td>
+</tr>
+
+<tr>
+<td class="org-left">Sine</td>
+<td class="org-right">256</td>
+<td class="org-right">8</td>
+<td class="org-right">8</td>
+<td class="org-left">Sine look up table used by the DDS core</td>
+</tr>
+
+<tr>
+<td class="org-left">Sawtooth</td>
+<td class="org-right">256</td>
+<td class="org-right">8</td>
+<td class="org-right">8</td>
+<td class="org-left">Sawtooth look up table used by the DDS core</td>
+</tr>
+
+<tr>
+<td class="org-left">Triangle</td>
+<td class="org-right">256</td>
+<td class="org-right">8</td>
+<td class="org-right">8</td>
+<td class="org-left">Triangle look up table used by the DDS core</td>
+</tr>
+</tbody>
+</table>
+<hr />
+</div>
+</div>
+</div>
+<div id="outline-container-org6fcc140" class="outline-2">
+<h2 id="org6fcc140"><span class="section-number-2">5.</span> Clocks</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+The following clocks are present within the design.
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-left">clock name</td>
+<td class="org-left">clock description</td>
+<td class="org-left">Clock max frequency</td>
+</tr>
+
+<tr>
+<td class="org-left">wb_clk_i</td>
+<td class="org-left">Wishbone B4 Classic bus clock input</td>
+<td class="org-left">Process Dependent</td>
+</tr>
+
+<tr>
+<td class="org-left">dds_clk_i</td>
+<td class="org-left">Input to the DDS core itself. The frequency at which the phase acumulator jumps</td>
+<td class="org-left">Process Dependent</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Clock speeds will depend upon the specific cell library or FPGA this design processes. All resets within the design are synchronous.
+</p>
+<hr />
+</div>
+</div>
+<div id="outline-container-org7d62395" class="outline-2">
+<h2 id="org7d62395"><span class="section-number-2">6.</span> IO Ports</h2>
+<div class="outline-text-2" id="text-6">
+<p>
+Wishbone interface uses the Wishbone B4 Classic slave interface. The optional features select, error, and retry are not supported on the bus. Due to the exclusion of the select line, all data transfers are 32-bit wide.
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-right" />
+
+<col  class="org-left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-left">port name</td>
+<td class="org-right">port width</td>
+<td class="org-left">description</td>
+</tr>
+
+<tr>
+<td class="org-left">wb_clk_i</td>
+<td class="org-right">1</td>
+<td class="org-left">Input clock to the core</td>
+</tr>
+
+<tr>
+<td class="org-left">wb_rst_i</td>
+<td class="org-right">1</td>
+<td class="org-left">Reset for the core</td>
+</tr>
+
+<tr>
+<td class="org-left">wb_dat_i</td>
+<td class="org-right">32</td>
+<td class="org-left">32-bit data input to the core</td>
+</tr>
+
+<tr>
+<td class="org-left">wb_addr_i</td>
+<td class="org-right">12</td>
+<td class="org-left">Indicates a valid bus cycle is in progress. Remains asserted for multi clock bus transactions</td>
+</tr>
+
+<tr>
+<td class="org-left">wb_we_i</td>
+<td class="org-right">1</td>
+<td class="org-left">Indicates that this is a write when asserted, and a read when not</td>
+</tr>
+
+<tr>
+<td class="org-left">wb_stb_i</td>
+<td class="org-right">1</td>
+<td class="org-left">Indicates that this there is a request for this slave when asserted</td>
+</tr>
+
+<tr>
+<td class="org-left">wb_dat_o</td>
+<td class="org-right">32</td>
+<td class="org-left">32-bit data output from the core</td>
+</tr>
+
+<tr>
+<td class="org-left">wb_ack_o</td>
+<td class="org-right">1</td>
+<td class="org-left">Indicates the termination of a bus cycle</td>
+</tr>
+
+<tr>
+<td class="org-left">dds_clk_i</td>
+<td class="org-right">1</td>
+<td class="org-left">Input to the DDS  core itself. This clock provides \(f_{dds}\) defined in the equation in Operations</td>
+</tr>
+
+<tr>
+<td class="org-left">wave_o</td>
+<td class="org-right">16</td>
+<td class="org-left">Word to be passed to ADC to generate your output waveform</td>
+</tr>
+</tbody>
+</table>
+<hr />
+</div>
+</div>
+<div id="outline-container-org8074586" class="outline-2">
+<h2 id="org8074586"><span class="section-number-2">7.</span> Design</h2>
+<div class="outline-text-2" id="text-7">
+</div>
+<div id="outline-container-orgffb6d3e" class="outline-3">
+<h3 id="orgffb6d3e"><span class="section-number-3">7.1.</span> Design Overview</h3>
+<div class="outline-text-3" id="text-7-1">
+<p>
+The design will be done in Verilog. All utilized features need to be synthesizable via Xilinx's Synthesizer. The design shall follow the Open Core's Coding guidelines.
+</p>
+
+<p>
+All modules should be parameterizable where possible.
+</p>
+
+<p>
+Verilator's linter will be used throughout the design project. Every module must past linting with no warnings or have a waiver.
+</p>
+
+<p>
+Git will be used for version control.
+</p>
+</div>
+<div id="outline-container-org2183531" class="outline-4">
+<h4 id="org2183531"><span class="section-number-4">7.1.1.</span> Lint Warning Wavers</h4>
+<div class="outline-text-4" id="text-7-1-1">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-left">Warning</td>
+<td class="org-left">Reason for Waiver</td>
+</tr>
+
+<tr>
+<td class="org-left">Unused Bits in Register</td>
+<td class="org-left">The control and status registers were purposely oversized</td>
+</tr>
+</tbody>
+</table>
+<hr />
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org82ad980" class="outline-2">
+<h2 id="org82ad980"><span class="section-number-2">8.</span> Verification</h2>
+<div class="outline-text-2" id="text-8">
+</div>
+<div id="outline-container-orgf32e110" class="outline-3">
+<h3 id="orgf32e110"><span class="section-number-3">8.1.</span> Verification Plan</h3>
+<div class="outline-text-3" id="text-8-1">
+<p>
+The verification of the core will follow the methods and test points listed below.
+</p>
+</div>
+<div id="outline-container-orge22d454" class="outline-4">
+<h4 id="orge22d454"><span class="section-number-4">8.1.1.</span> Verification Methodology</h4>
+<div class="outline-text-4" id="text-8-1-1">
+<p>
+Verification will be performed in standard verilog via Icarus Verilog. Make will be used to organize test runs.
+</p>
+</div>
+</div>
+<div id="outline-container-org6cf50ee" class="outline-4">
+<h4 id="org6cf50ee"><span class="section-number-4">8.1.2.</span> Functional Coverage</h4>
+<div class="outline-text-4" id="text-8-1-2">
+</div>
+<ol class="org-ol">
+<li><a id="orge937d00"></a>Bit Bash<br />
+<div class="outline-text-5" id="text-8-1-2-1">
+<p>
+All DUT registers and read permissions will be ensured via a bit bash sequence on the Register Map.
+</p>
+</div>
+</li>
+<li><a id="org7054768"></a>Wave Outputs<br />
+<div class="outline-text-5" id="text-8-1-2-2">
+<p>
+The DUT will be tested for all possible waveform outputs {SINE, SAWTOOTH, RANDOM, RAM_BASED}. (The RAM_BASED wave will test a user defined wave of each the following types{SINE, TRIANGLE, PULSE})
+</p>
+</div>
+</li>
+<li><a id="org0ff019b"></a>Tuning Word<br />
+<div class="outline-text-5" id="text-8-1-2-3">
+<p>
+The DUT will vary the output frequency based upon tuning word.
+</p>
+</div>
+</li>
+<li><a id="org8fcf4c7"></a>Gain Testing<br />
+<div class="outline-text-5" id="text-8-1-2-4">
+<p>
+The DUT will vary the output gain based on gain word.
+</p>
+</div>
+</li>
+<li><a id="org82cf134"></a>Offset testing<br />
+<div class="outline-text-5" id="text-8-1-2-5">
+<p>
+The DUT will vary the output offset based on offset word.
+</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-orga168965" class="outline-3">
+<h3 id="orga168965"><span class="section-number-3">8.2.</span> Verification Results</h3>
+<div class="outline-text-3" id="text-8-2">
+<hr />
+</div>
+<div id="outline-container-org01ab679" class="outline-4">
+<h4 id="org01ab679"><span class="section-number-4">8.2.1.</span> Simple_DDS Example Waveforms</h4>
+<div class="outline-text-4" id="text-8-2-1">
+<p>
+The following waveform is of the randomized test case for the core.
+</p>
+
+<p>
+<img src="wave_screenshot.png" alt="wave_screenshot.png" />
+Step 1. Register testing
+Step 2. Write test condition to core
+Step 3. Let dds core run
+</p>
+
+<p>
+Following this a python script parses the output log and plots the wave.
+</p>
+</div>
+</div>
+<div id="outline-container-org1e1eab4" class="outline-4">
+<h4 id="org1e1eab4"><span class="section-number-4">8.2.2.</span> Simple DDS Log Results</h4>
+<div class="outline-text-4" id="text-8-2-2">
+<p>
+See the abbreviated results from the testbench here
+</p>
+
+<p>
+simple_dds_log_20221204211523.tb
+</p>
+<div class="org-src-container">
+<pre class="src src-shell">VCD info: dumpfile ../out/wave_simple_dds.vcd opened for output.
+INFO: Testing Register Writes
+---------------------------------------------------------------------------
+INFO: DDS_SRC: SINE
+INFO: TUNING_WORD <span style="color: #a45bad;">0x01</span>
+INFO GAIN_WORD: x1
+INFO: OFFSET_WORD <span style="color: #a45bad;">0x7fff</span>
+---------------------------------------------------------------------------
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">Register Reset Testing</span>
+INFO: WB read from <span style="color: #a45bad;">0x0000</span>
+INFO: WB read <span style="color: #a45bad;">0x00000001</span> from <span style="color: #a45bad;">0x0000</span>
+INFO: WB read from <span style="color: #a45bad;">0x0001</span>
+INFO: WB read <span style="color: #a45bad;">0x00000000</span> from <span style="color: #a45bad;">0x0001</span>
+...
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">Register Write/Read Testing</span>
+INFO: WB Writing <span style="color: #a45bad;">0xffffffff</span> to <span style="color: #a45bad;">0x0000</span>
+INFO: WB Wrote <span style="color: #a45bad;">0xffffffff</span> to <span style="color: #a45bad;">0x0000</span>
+INFO: WB Writing <span style="color: #a45bad;">0xffffffff</span> to <span style="color: #a45bad;">0x0001</span>
+...
+INFO: WB read from <span style="color: #a45bad;">0x0001</span>
+INFO: WB read <span style="color: #a45bad;">0xffffffff</span> from <span style="color: #a45bad;">0x0001</span>
+INFO: WB read from <span style="color: #a45bad;">0x0002</span>
+...
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">Configure Test Conditions</span>
+INFO: WB Writing <span style="color: #a45bad;">0x00000000</span> to <span style="color: #a45bad;">0x0002</span>
+INFO: WB Wrote <span style="color: #a45bad;">0x00000000</span> to <span style="color: #a45bad;">0x0002</span>
+INFO: WB Writing <span style="color: #a45bad;">0x00000001</span> to <span style="color: #a45bad;">0x0003</span>
+INFO: WB Wrote <span style="color: #a45bad;">0x00000001</span> to <span style="color: #a45bad;">0x0003</span>
+INFO: WB Writing <span style="color: #a45bad;">0x00000000</span> to <span style="color: #a45bad;">0x0004</span>
+INFO: WB Wrote <span style="color: #a45bad;">0x00000000</span> to <span style="color: #a45bad;">0x0004</span>
+INFO: WB Writing <span style="color: #a45bad;">0x00007fff</span> to <span style="color: #a45bad;">0x0005</span>
+INFO: WB Wrote <span style="color: #a45bad;">0x00007fff</span> to <span style="color: #a45bad;">0x0005</span>
+INFO: WB Writing <span style="color: #a45bad;">0x00000001</span> to <span style="color: #a45bad;">0x0001</span>
+INFO: WB Wrote <span style="color: #a45bad;">0x00000001</span> to <span style="color: #a45bad;">0x0001</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">Sample DDS Output</span>
+INFO: sample:          <span style="color: #a45bad;">0</span> value:33022
+INFO: sample:          <span style="color: #a45bad;">1</span> value:33022
+INFO: sample:          <span style="color: #a45bad;">2</span> value:33022
+INFO: sample:          <span style="color: #a45bad;">3</span> value:33022
+...
+INFO: sample:        <span style="color: #a45bad;">498</span> value:32992
+INFO: sample:        <span style="color: #a45bad;">499</span> value:32990
+INFO: Test Complete
+/home/patrick/ws/school/verilog_and_vhdl/simple_dds/sim/rtl_sim/src/simple_dds_tb.v:121: $<span style="color: #7590db;">finish</span> called at <span style="color: #a45bad;">13245</span> <span style="color: #4f97d7;">(</span><span style="color: #a45bad;">1s</span><span style="color: #4f97d7;">)</span>
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org2e93fce" class="outline-4">
+<h4 id="org2e93fce"><span class="section-number-4">8.2.3.</span> DDS testing Results Results</h4>
+<div class="outline-text-4" id="text-8-2-3">
+<p>
+All tests by results randomize completely. The following cases are some cherry picked corner cases that the default random case had temporarily overwritten for the sake of recording these results.
+</p>
+
+<p>
+Note: Initially the offset was reset to the wrong value of 0x0fff rather than 0x7fff. You'll notice that the pictures prior to offset testing will use that default. This was fixed for the final release.
+</p>
+</div>
+<ol class="org-ol">
+<li><a id="org7469d19"></a>Bit Bash<br />
+<div class="outline-text-5" id="text-8-2-3-1">
+<p>
+Passing
+</p>
+</div>
+</li>
+<li><a id="orga36fafe"></a>Wave Outputs<br />
+<div class="outline-text-5" id="text-8-2-3-2">
+<p>
+All values besides dds_src are set to the defaults. Note that this tests the defaults for the other test conditions as well
+</p>
+</div>
+<ol class="org-ol">
+<li><a id="org8de25c9"></a>Sine Wave<br />
+<div class="outline-text-6" id="text-8-2-3-2-1">
+
+<div id="org4cd1495" class="figure">
+<p><img src="wave_sin.png" alt="wave_sin.png" />
+</p>
+<p><span class="figure-number">Figure 6: </span>Sine Wave</p>
+</div>
+</div>
+</li>
+<li><a id="org608e81d"></a>Sawtooth Wave<br />
+<div class="outline-text-6" id="text-8-2-3-2-2">
+
+<div id="orgcb1eb41" class="figure">
+<p><img src="wave_saw.png" alt="wave_saw.png" />
+</p>
+<p><span class="figure-number">Figure 7: </span>Sawtooth Wave</p>
+</div>
+</div>
+</li>
+<li><a id="org8caa017"></a>Triangle Wave<br />
+<div class="outline-text-6" id="text-8-2-3-2-3">
+
+<div id="org498dcec" class="figure">
+<p><img src="wave_tri.png" alt="wave_tri.png" />
+</p>
+<p><span class="figure-number">Figure 8: </span>Triangle Wave</p>
+</div>
+</div>
+</li>
+<li><a id="orgafa4455"></a>Random Wave<br />
+<div class="outline-text-6" id="text-8-2-3-2-4">
+
+<div id="orgb1ca5af" class="figure">
+<p><img src="wave_rand.png" alt="wave_rand.png" />
+</p>
+<p><span class="figure-number">Figure 9: </span>Random Wave</p>
+</div>
+</div>
+</li>
+</ol>
+</li>
+<li><a id="org4dab702"></a>Tuning Word<br />
+<div class="outline-text-5" id="text-8-2-3-3">
+<p>
+All values besides tuning_word are set to the defaults.
+</p>
+</div>
+<ol class="org-ol">
+<li><a id="orgaa485c0"></a>8'h0F<br />
+<div class="outline-text-6" id="text-8-2-3-3-1">
+
+<div id="org2407f4e" class="figure">
+<p><img src="tune_0f.png" alt="tune_0f.png" />
+</p>
+<p><span class="figure-number">Figure 10: </span>Tuning Word of 8'h0F</p>
+</div>
+</div>
+</li>
+<li><a id="org06118e8"></a>8'h3F<br />
+<div class="outline-text-6" id="text-8-2-3-3-2">
+
+<div id="orgedf35b7" class="figure">
+<p><img src="tune_3f.png" alt="tune_3f.png" />
+</p>
+<p><span class="figure-number">Figure 11: </span>Tuning Word of 8'h3F</p>
+</div>
+</div>
+</li>
+<li><a id="orgb046508"></a>8'hFF<br />
+<div class="outline-text-6" id="text-8-2-3-3-3">
+
+<div id="org489b8e4" class="figure">
+<p><img src="tune_ff.png" alt="tune_ff.png" />
+</p>
+<p><span class="figure-number">Figure 12: </span>Tuning Word of 8'hFF</p>
+</div>
+</div>
+</li>
+</ol>
+</li>
+<li><a id="orgeedb3a1"></a>Gain Testing<br />
+<div class="outline-text-5" id="text-8-2-3-4">
+<p>
+All values besides gain_word are set to the default.
+</p>
+</div>
+<ol class="org-ol">
+<li><a id="org98108e0"></a>x2<br />
+<div class="outline-text-6" id="text-8-2-3-4-1">
+
+<div id="org5f84681" class="figure">
+<p><img src="gain_2.png" alt="gain_2.png" />
+</p>
+<p><span class="figure-number">Figure 13: </span>Gain x2</p>
+</div>
+</div>
+</li>
+<li><a id="org57fcd00"></a>x4<br />
+<div class="outline-text-6" id="text-8-2-3-4-2">
+
+<div id="orgecf67a4" class="figure">
+<p><img src="gain_4.png" alt="gain_4.png" />
+</p>
+<p><span class="figure-number">Figure 14: </span>Gain x4</p>
+</div>
+</div>
+</li>
+<li><a id="orga79cc37"></a>x8<br />
+<div class="outline-text-6" id="text-8-2-3-4-3">
+
+<div id="orgef225b1" class="figure">
+<p><img src="gain_8.png" alt="gain_8.png" />
+</p>
+<p><span class="figure-number">Figure 15: </span>Gain x8</p>
+</div>
+</div>
+</li>
+</ol>
+</li>
+<li><a id="org9f2953b"></a>Offset Testing<br />
+<div class="outline-text-5" id="text-8-2-3-5">
+<p>
+All values besides offset word are set to the default
+</p>
+</div>
+<ol class="org-ol">
+<li><a id="org346ef54"></a>16'd0<br />
+<div class="outline-text-6" id="text-8-2-3-5-1">
+
+<div id="orgfdb6992" class="figure">
+<p><img src="offset_0.png" alt="offset_0.png" />
+</p>
+<p><span class="figure-number">Figure 16: </span>Offset 16'h0000</p>
+</div>
+</div>
+</li>
+<li><a id="org8f6223f"></a>16'H3FFF<br />
+<div class="outline-text-6" id="text-8-2-3-5-2">
+
+<div id="org218bc64" class="figure">
+<p><img src="offset_3fff.png" alt="offset_3fff.png" />
+</p>
+<p><span class="figure-number">Figure 17: </span>Offset 16'h3FFF</p>
+</div>
+</div>
+</li>
+<li><a id="org72982f1"></a>16'hFFFF<br />
+<div class="outline-text-6" id="text-8-2-3-5-3">
+<p>
+Note that this is what happens when your waveform clips completely :)
+</p>
+
+<div id="org6bcef17" class="figure">
+<p><img src="offset_ffff.png" alt="offset_ffff.png" />
+</p>
+<p><span class="figure-number">Figure 18: </span>Offset 16'hFFFF</p>
+</div>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</div>
+<div id="outline-container-org7edec14" class="outline-4">
+<h4 id="org7edec14"><span class="section-number-4">8.2.4.</span> Final Results</h4>
+<div class="outline-text-4" id="text-8-2-4">
+<p>
+From the results above you can see full functional verification of the DUT. All features are working according to the specification.
+</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org8f3aec9" class="outline-2">
+<h2 id="org8f3aec9"><span class="section-number-2">9.</span> Revision History</h2>
+<div class="outline-text-2" id="text-9">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption class="t-above"><span class="table-number">Table 1:</span> Change history for this core</caption>
+
+<colgroup>
+<col  class="org-right" />
+
+<col  class="org-right" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="org-right">Rev</td>
+<td class="org-right">Date</td>
+<td class="org-left">Author</td>
+<td class="org-left">Description</td>
+</tr>
+
+<tr>
+<td class="org-right">1.0</td>
+<td class="org-right">2022-12-04</td>
+<td class="org-left">phoey</td>
+<td class="org-left">Release of Core</td>
+</tr>
+
+<tr>
+<td class="org-right">0.2</td>
+<td class="org-right">28-11-2022</td>
+<td class="org-left">phoey</td>
+<td class="org-left">update register map and memory</td>
+</tr>
+
+<tr>
+<td class="org-right">0.1</td>
+<td class="org-right">30-10-2022</td>
+<td class="org-left">phoey</td>
+<td class="org-left">initial release</td>
+</tr>
+</tbody>
+</table>
+<hr />
+</div>
+</div>
+<div id="outline-container-org01d12ed" class="outline-2">
+<h2 id="org01d12ed"><span class="section-number-2">10.</span> Appendices</h2>
+<div class="outline-text-2" id="text-10">
+</div>
+<div id="outline-container-org1e12439" class="outline-3">
+<h3 id="org1e12439"><span class="section-number-3">10.1.</span> Resources &amp; References</h3>
+<div class="outline-text-3" id="text-10-1">
+</div>
+<div id="outline-container-orgb9f2390" class="outline-4">
+<h4 id="orgb9f2390"><span class="section-number-4">10.1.1.</span> ADI - All About Direct Digital Synthesis</h4>
+<div class="outline-text-4" id="text-10-1-1">
+<p>
+<a href="https://www.analog.com/en/analog-dialogue/articles/all-about-direct-digital-synthesis.html">https://www.analog.com/en/analog-dialogue/articles/all-about-direct-digital-synthesis.html</a>
+</p>
+</div>
+</div>
+<div id="outline-container-orgd8d97bb" class="outline-4">
+<h4 id="orgd8d97bb"><span class="section-number-4">10.1.2.</span> Open Cores Specification Template</h4>
+<div class="outline-text-4" id="text-10-1-2">
+<p>
+<a href="https://cdn.opencores.org/downloads/specification_template.dot">https://cdn.opencores.org/downloads/specification_template.dot</a>
+</p>
+</div>
+</div>
+<div id="outline-container-orge89c864" class="outline-4">
+<h4 id="orge89c864"><span class="section-number-4">10.1.3.</span> Open Cores Coding Guideline</h4>
+<div class="outline-text-4" id="text-10-1-3">
+<p>
+<a href="https://opencores.org/websvn/filedetails?repname=common&amp;path=%2Fcommon%2Ftrunk%2Fopencores_coding_guidelines.pdf">https://opencores.org/websvn/filedetails?repname=common&amp;path=%2Fcommon%2Ftrunk%2Fopencores_coding_guidelines.pdf</a>
+</p>
+</div>
+</div>
+<div id="outline-container-orgdcd988b" class="outline-4">
+<h4 id="orgdcd988b"><span class="section-number-4">10.1.4.</span> Open Cores Wishbone B4 Specification</h4>
+<div class="outline-text-4" id="text-10-1-4">
+<p>
+<a href="https://cdn.opencores.org/downloads/wbspec_b4.pdf">https://cdn.opencores.org/downloads/wbspec_b4.pdf</a>
+</p>
+</div>
+</div>
+<div id="outline-container-org1df082a" class="outline-4">
+<h4 id="org1df082a"><span class="section-number-4">10.1.5.</span> ZipCPU - Wishbone Slave Guide</h4>
+<div class="outline-text-4" id="text-10-1-5">
+<p>
+<a href="https://zipcpu.com/zipcpu/2017/05/29/simple-wishbone.html">https://zipcpu.com/zipcpu/2017/05/29/simple-wishbone.html</a>
+</p>
+</div>
+</div>
+<div id="outline-container-org97b0560" class="outline-4">
+<h4 id="org97b0560"><span class="section-number-4">10.1.6.</span> Sin Table Generation and Guide</h4>
+<div class="outline-text-4" id="text-10-1-6">
+<p>
+<a href="https://projectf.io/posts/fpga-sine-table/">https://projectf.io/posts/fpga-sine-table/</a>
+</p>
+</div>
+</div>
+<div id="outline-container-orgef3c2ea" class="outline-4">
+<h4 id="orgef3c2ea"><span class="section-number-4">10.1.7.</span> LFSR Guide</h4>
+<div class="outline-text-4" id="text-10-1-7">
+<p>
+<a href="https://simplefpga.blogspot.com/2013/02/random-number-generator-in-verilog-fpga.html">https://simplefpga.blogspot.com/2013/02/random-number-generator-in-verilog-fpga.html</a>
+</p>
+</div>
+</div>
+<div id="outline-container-org7d13a64" class="outline-4">
+<h4 id="org7d13a64"><span class="section-number-4">10.1.8.</span> Generate LUTs</h4>
+<div class="outline-text-4" id="text-10-1-8">
+<p>
+<a href="https://github.com/ShenghanGao/Lookup-Table">https://github.com/ShenghanGao/Lookup-Table</a>
+</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-org33a6154" class="outline-2">
+<h2 id="org33a6154"><span class="section-number-2">11.</span> Code</h2>
+<div class="outline-text-2" id="text-11">
+</div>
+<div id="outline-container-orgf16675b" class="outline-3">
+<h3 id="orgf16675b"><span class="section-number-3">11.1.</span> RTL</h3>
+<div class="outline-text-3" id="text-11-1">
+<p>
+simple_dds.v
+</p>
+<div class="org-src-container">
+<pre class="src src-verilog"><span style="color: #2aa1ae; background-color: #292e34;">//                              </span><span style="color: #2aa1ae; background-color: #292e34;">-*- Mode: Verilog -*-</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Filename        : simple_dds.v</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Description     : A direct digital synthesis core capable of sine, sawtooth, random, and user defined waves</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Author          : Patrick Hoey</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Created On      : Sun Nov 27 18:23:16 2022</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Last Modified By: Patrick Hoey</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Last Modified On: Sun Nov 27 18:23:16 2022</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Update Count    : 0</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Status          : Unknown, Use with caution!</span>
+
+<span style="color: #4f97d7; font-weight: bold;">module</span> <span style="color: #bc6ec5; font-weight: bold;">simple_dds</span> <span style="color: #4f97d7;">(</span><span style="color: #2aa1ae; background-color: #292e34;">/*</span><span style="color: #2aa1ae; background-color: #292e34;">AUTOARG*/</span>
+                   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Outputs</span>
+                   wb_dat_o, wb_ack_o, wave_o,
+                   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Inputs</span>
+                   wb_clk_i, wb_rst_i, wb_dat_i, wb_addr_i, wb_we_i, wb_stb_i, dds_clk_i
+                   <span style="color: #4f97d7;">)</span> ;
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Parameters</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> DATA_WIDTH = <span style="color: #a45bad;">32</span>;
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> ADDR_WIDTH = <span style="color: #a45bad;">16</span>;
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> WAVE_WIDTH = <span style="color: #a45bad;">16</span>;
+
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">I/O</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Wishbone Interface Signals</span>
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span> wb_clk_i;
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span> wb_rst_i;
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span>DATA_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> wb_dat_i;
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span>ADDR_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> wb_addr_i;
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span>                  wb_we_i;
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span>                  wb_stb_i;
+
+   <span style="color: #ce537a; font-weight: bold;">output</span> <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span>DATA_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> wb_dat_o;
+   <span style="color: #ce537a; font-weight: bold;">output</span> <span style="color: #ce537a; font-weight: bold;">wire</span>                  wb_ack_o;
+
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Misc IO signals</span>
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span>                   dds_clk_i;
+
+   <span style="color: #ce537a; font-weight: bold;">output</span> <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span>WAVE_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> wave_o;
+
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Internal Signals</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Register Map Signals</span>
+   <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span>DATA_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>         reg_map_r <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">5</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Consult Spec for register map</span>
+
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Observation wires to ensure registers work properly</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">verilator lint_off UNUSED */</span>
+   <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span>DATA_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>        ready_w;
+   <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span>DATA_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>        enable_w;
+   <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span>DATA_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>        dds_src_w;
+   <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span>DATA_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>        tuning_word_w;
+   <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span>DATA_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>        gain_word_w;
+   <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span>DATA_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>        offset_word_w;
+   <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">verilator lint_on UNUSED */</span>
+
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Registered output signals</span>
+   <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span>DATA_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>         wb_dat_r;
+   <span style="color: #ce537a; font-weight: bold;">reg</span>                          wb_ack_r;
+   <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span>WAVE_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>        wave_res;
+
+
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Module Instantiations</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   dds_core <span style="color: #bc6ec5; font-weight: bold;">dds_0</span><span style="color: #4f97d7;">(</span><span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Outputs</span>
+                  .<span style="color: #bc6ec5; font-weight: bold;">wave_o</span>               <span style="color: #bc6ec5;">(</span>wave_res<span style="color: #bc6ec5;">)</span>,
+                  <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Inputs</span>
+                  .<span style="color: #bc6ec5; font-weight: bold;">dds_clk_i</span>            <span style="color: #bc6ec5;">(</span>dds_clk_i<span style="color: #bc6ec5;">)</span>,
+                  .<span style="color: #bc6ec5; font-weight: bold;">wb_clk_i</span>             <span style="color: #bc6ec5;">(</span>wb_clk_i<span style="color: #bc6ec5;">)</span>,
+                  .<span style="color: #bc6ec5; font-weight: bold;">wb_rst_i</span>             <span style="color: #bc6ec5;">(</span>wb_rst_i<span style="color: #bc6ec5;">)</span>,
+                  .<span style="color: #bc6ec5; font-weight: bold;">dds_src_i</span>            <span style="color: #bc6ec5;">(</span>dds_src_w<span style="color: #2d9574;">[</span><span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span>,
+                  .<span style="color: #bc6ec5; font-weight: bold;">tuning_word_i</span>        <span style="color: #bc6ec5;">(</span>tuning_word_w<span style="color: #2d9574;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span>,
+                  .<span style="color: #bc6ec5; font-weight: bold;">gain_word_i</span>          <span style="color: #bc6ec5;">(</span>gain_word_w<span style="color: #2d9574;">[</span><span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span>,
+                  .<span style="color: #bc6ec5; font-weight: bold;">offset_word_i</span>        <span style="color: #bc6ec5;">(</span>offset_word_w<span style="color: #2d9574;">[</span><span style="color: #a45bad;">15</span>:<span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>;
+
+
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">RTL</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #4f97d7; font-weight: bold;">always</span> <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">posedge</span> wb_clk_i<span style="color: #4f97d7;">)</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+      <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>wb_rst_i<span style="color: #4f97d7;">)</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+         wb_ack_r      &lt;= <span style="color: #a45bad;">1</span>'b0;
+         reg_map_r<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>  &lt;= <span style="color: #a45bad;">1</span>;
+         reg_map_r<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">1</span><span style="color: #4f97d7;">]</span>  &lt;= <span style="color: #a45bad;">0</span>;
+         reg_map_r<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">2</span><span style="color: #4f97d7;">]</span>  &lt;= <span style="color: #a45bad;">0</span>;
+         reg_map_r<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">3</span><span style="color: #4f97d7;">]</span>  &lt;= <span style="color: #a45bad;">1</span>;
+         reg_map_r<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">4</span><span style="color: #4f97d7;">]</span>  &lt;= <span style="color: #a45bad;">0</span>;
+         reg_map_r<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">5</span><span style="color: #4f97d7;">]</span>  &lt;= <span style="color: #a45bad;">32</span>'h0000_7FFF;
+      <span style="color: #ffa500; font-weight: bold;">end</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+         <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Writes------------------------</span>
+         <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">(</span>wb_stb_i<span style="color: #bc6ec5;">)</span> &amp;&amp; <span style="color: #bc6ec5;">(</span>wb_we_i<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+            <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">(</span>wb_addr_i &gt; <span style="color: #a45bad;">16</span>'h0000<span style="color: #bc6ec5;">)</span> &amp;&amp; <span style="color: #bc6ec5;">(</span>wb_addr_i &lt; <span style="color: #a45bad;">16</span>'h0006<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+               reg_map_r<span style="color: #4f97d7;">[</span>wb_addr_i<span style="color: #bc6ec5;">[</span><span style="color: #a45bad;">2</span>:<span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">]</span> &lt;= wb_dat_i;
+            <span style="color: #ffa500; font-weight: bold;">end</span>
+         <span style="color: #ffa500; font-weight: bold;">end</span>
+
+         <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Reads-------------------------</span>
+         <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">(</span>wb_stb_i<span style="color: #bc6ec5;">)</span> &amp;&amp; <span style="color: #bc6ec5;">(</span>~wb_we_i<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+            <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>wb_addr_i &lt; <span style="color: #a45bad;">16</span>'h0006<span style="color: #4f97d7;">)</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+               wb_dat_r &lt;= reg_map_r<span style="color: #4f97d7;">[</span>wb_addr_i<span style="color: #bc6ec5;">[</span><span style="color: #a45bad;">2</span>:<span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">]</span>;
+            <span style="color: #ffa500; font-weight: bold;">end</span>
+         <span style="color: #ffa500; font-weight: bold;">end</span>
+
+         <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Acknowledge transaction------</span>
+         wb_ack_r &lt;= wb_stb_i;
+      <span style="color: #ffa500; font-weight: bold;">end</span>
+   <span style="color: #ffa500; font-weight: bold;">end</span>
+
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Assigns</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Wishbone</span>
+   <span style="color: #4f97d7; font-weight: bold;">assign</span> wb_dat_o = wb_dat_r;
+   <span style="color: #4f97d7; font-weight: bold;">assign</span> wb_ack_o = wb_ack_r;
+
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Waveform</span>
+   <span style="color: #4f97d7; font-weight: bold;">assign</span> wave_o = enable_w<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> ? wave_res : <span style="color: #a45bad;">0</span>;
+
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Register Observation Wires</span>
+   <span style="color: #4f97d7; font-weight: bold;">assign</span> ready_w = reg_map_r<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>;
+   <span style="color: #4f97d7; font-weight: bold;">assign</span> enable_w = reg_map_r<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">1</span><span style="color: #4f97d7;">]</span>;
+   <span style="color: #4f97d7; font-weight: bold;">assign</span> dds_src_w = reg_map_r<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">2</span><span style="color: #4f97d7;">]</span>;
+   <span style="color: #4f97d7; font-weight: bold;">assign</span> tuning_word_w = reg_map_r<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">3</span><span style="color: #4f97d7;">]</span>;
+   <span style="color: #4f97d7; font-weight: bold;">assign</span> gain_word_w = reg_map_r<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">4</span><span style="color: #4f97d7;">]</span>;
+   <span style="color: #4f97d7; font-weight: bold;">assign</span> offset_word_w = reg_map_r<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">5</span><span style="color: #4f97d7;">]</span>;
+
+<span style="color: #4f97d7; font-weight: bold;">endmodule</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">simple_dds</span>
+</pre>
+</div>
+
+<p>
+dds_core.v
+</p>
+<div class="org-src-container">
+<pre class="src src-verilog"><span style="color: #2aa1ae; background-color: #292e34;">//                              </span><span style="color: #2aa1ae; background-color: #292e34;">-*- Mode: Verilog -*-</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Filename        : dds_core.v</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Description     : Generates the DDS output signal. Note that 3 dds clock edges must occur before the signal becomes valid</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Author          : Patrick</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Created On      : Sun Dec  4 17:59:32 2022</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Last Modified By: Patrick</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Last Modified On: Sun Dec  4 17:59:32 2022</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Update Count    : 0</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Status          : Unknown, Use with caution!</span>
+
+
+<span style="color: #4f97d7; font-weight: bold;">module</span> <span style="color: #bc6ec5; font-weight: bold;">dds_core</span> <span style="color: #4f97d7;">(</span><span style="color: #2aa1ae; background-color: #292e34;">/*</span><span style="color: #2aa1ae; background-color: #292e34;">AUTOARG*/</span>
+                 <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Outputs</span>
+                 wave_o,
+                 <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Inputs</span>
+                 dds_clk_i, wb_clk_i, wb_rst_i, dds_src_i, tuning_word_i, gain_word_i,
+                 offset_word_i
+                 <span style="color: #4f97d7;">)</span> ;
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Parameters</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> WAVE_WIDTH = <span style="color: #a45bad;">16</span>;
+
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">I/O</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span> dds_clk_i;
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span> wb_clk_i;
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span> wb_rst_i;
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> dds_src_i;
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> tuning_word_i;
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> gain_word_i;
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">15</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> offset_word_i;
+
+   <span style="color: #ce537a; font-weight: bold;">output</span> <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span>WAVE_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> wave_o;
+
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Internal Signals</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>                    phase_acum_r;
+   <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>                   sine_w;
+   <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>                   tri_w;
+   <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>                   saw_w;
+   <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>                   rand_w;
+
+   <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span>WAVE_WIDTH/<span style="color: #a45bad;">2</span>-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>       wave_pre_multiply;
+   <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span>WAVE_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>         wave_pre_offset;
+   <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span>WAVE_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>         wave_r;
+
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Module Instantiations</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   sine_lut <span style="color: #bc6ec5; font-weight: bold;">sine_0</span><span style="color: #4f97d7;">(</span><span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">/ Outputs</span>
+                   .<span style="color: #bc6ec5; font-weight: bold;">sine_o</span>              <span style="color: #bc6ec5;">(</span>sine_w<span style="color: #bc6ec5;">)</span>,
+                   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Inputs</span>
+                   .<span style="color: #bc6ec5; font-weight: bold;">address_i</span>           <span style="color: #bc6ec5;">(</span>phase_acum_r<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>;
+   tri_lut <span style="color: #bc6ec5; font-weight: bold;">tri_0</span><span style="color: #4f97d7;">(</span><span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Outputs</span>
+                 .<span style="color: #bc6ec5; font-weight: bold;">tri_o</span>                 <span style="color: #bc6ec5;">(</span>tri_w<span style="color: #bc6ec5;">)</span>,
+                 <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Inputs</span>
+                 .<span style="color: #bc6ec5; font-weight: bold;">address_i</span>             <span style="color: #bc6ec5;">(</span>phase_acum_r<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>;
+   saw_lut <span style="color: #bc6ec5; font-weight: bold;">saw_0</span><span style="color: #4f97d7;">(</span><span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Outputs</span>
+                 .<span style="color: #bc6ec5; font-weight: bold;">saw_o</span>                 <span style="color: #bc6ec5;">(</span>saw_w<span style="color: #bc6ec5;">)</span>,
+                 <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Inputs</span>
+                 .<span style="color: #bc6ec5; font-weight: bold;">address_i</span>             <span style="color: #bc6ec5;">(</span>phase_acum_r<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>;
+
+   lfsr <span style="color: #bc6ec5; font-weight: bold;">lfsr_0</span><span style="color: #4f97d7;">(</span><span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Outputs</span>
+               .<span style="color: #bc6ec5; font-weight: bold;">rand_o</span>                  <span style="color: #bc6ec5;">(</span>rand_w<span style="color: #bc6ec5;">)</span>,
+               <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Inputs</span>
+               .<span style="color: #bc6ec5; font-weight: bold;">clk_i</span>                   <span style="color: #bc6ec5;">(</span>dds_clk_i<span style="color: #bc6ec5;">)</span>,
+               .<span style="color: #bc6ec5; font-weight: bold;">rst_i</span>                   <span style="color: #bc6ec5;">(</span>wb_rst_i<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>;
+
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">RTL</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #4f97d7; font-weight: bold;">always</span> <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">posedge</span> dds_clk_i <span style="color: #ce537a; font-weight: bold;">or</span> <span style="color: #4f97d7; font-weight: bold;">posedge</span> wb_clk_i<span style="color: #4f97d7;">)</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+      <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span>wb_clk_i &amp; wb_rst_i<span style="color: #4f97d7;">)</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+         phase_acum_r &lt;= <span style="color: #a45bad;">8</span>'d0;
+         wave_pre_multiply &lt;= <span style="color: #a45bad;">0</span>;
+         wave_pre_offset &lt;= <span style="color: #a45bad;">0</span>;
+         wave_r &lt;= <span style="color: #a45bad;">0</span>;
+      <span style="color: #ffa500; font-weight: bold;">end</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+         phase_acum_r &lt;= phase_acum_r + tuning_word_i;
+         <span style="color: #4f97d7; font-weight: bold;">case</span> <span style="color: #4f97d7;">(</span>dds_src_i<span style="color: #4f97d7;">)</span>
+            <span style="color: #a45bad;">2</span>'b00 : wave_pre_multiply &lt;= sine_w; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Sine</span>
+            <span style="color: #a45bad;">2</span>'b01 : wave_pre_multiply &lt;= saw_w; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Sawtooth</span>
+            <span style="color: #a45bad;">2</span>'b10 : wave_pre_multiply &lt;= tri_w; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Triangle</span>
+            <span style="color: #a45bad;">2</span>'b11 : wave_pre_multiply &lt;= rand_w; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Random</span>
+         <span style="color: #4f97d7; font-weight: bold;">endcase</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">case (dds_src_i)</span>
+         <span style="color: #4f97d7; font-weight: bold;">case</span> <span style="color: #4f97d7;">(</span>gain_word_i<span style="color: #4f97d7;">)</span>
+            <span style="color: #a45bad;">2</span>'b00 : wave_pre_offset &lt;= <span style="color: #4f97d7;">{</span><span style="color: #a45bad;">8</span>'b0, wave_pre_multiply<span style="color: #4f97d7;">}</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">x1</span>
+            <span style="color: #a45bad;">2</span>'b01 : wave_pre_offset &lt;= <span style="color: #4f97d7;">{</span><span style="color: #a45bad;">7</span>'b0, wave_pre_multiply, <span style="color: #a45bad;">1</span>'b0<span style="color: #4f97d7;">}</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">x2</span>
+            <span style="color: #a45bad;">2</span>'b10 : wave_pre_offset &lt;= <span style="color: #4f97d7;">{</span><span style="color: #a45bad;">6</span>'b0, wave_pre_multiply, <span style="color: #a45bad;">2</span>'b0<span style="color: #4f97d7;">}</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">x4</span>
+            <span style="color: #a45bad;">2</span>'b11 : wave_pre_offset &lt;= <span style="color: #4f97d7;">{</span><span style="color: #a45bad;">5</span>'b0, wave_pre_multiply, <span style="color: #a45bad;">3</span>'b0<span style="color: #4f97d7;">}</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">x8</span>
+         <span style="color: #4f97d7; font-weight: bold;">endcase</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">case (gain_word_i)</span>
+         wave_r &lt;= wave_pre_offset + offset_word_i;
+      <span style="color: #ffa500; font-weight: bold;">end</span>
+   <span style="color: #ffa500; font-weight: bold;">end</span>
+
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Assigns</span>
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">--------------------------------------------------------------------------------------------------------------------------------------------</span>
+   <span style="color: #4f97d7; font-weight: bold;">assign</span> wave_o = wave_r;
+
+<span style="color: #4f97d7; font-weight: bold;">endmodule</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">dds_core</span>
+</pre>
+</div>
+
+<p>
+lfsr.v
+</p>
+<div class="org-src-container">
+<pre class="src src-verilog"><span style="color: #2aa1ae; background-color: #292e34;">//                              </span><span style="color: #2aa1ae; background-color: #292e34;">-*- Mode: Verilog -*-</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Filename        : lfsr.v</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Description     : LFSR Random Number Generator</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Author          : Patrick</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Created On      : Sun Dec  4 18:12:53 2022</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Last Modified By: Patrick</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Last Modified On: Sun Dec  4 18:12:53 2022</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Update Count    : 0</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Status          : Unknown, Use with caution!</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Based on https://simplefpga.blogspot.com/2013/02/random-number-generator-in-verilog-fpga.html</span>
+
+
+<span style="color: #4f97d7; font-weight: bold;">module</span> <span style="color: #bc6ec5; font-weight: bold;">lfsr</span> <span style="color: #4f97d7;">(</span><span style="color: #2aa1ae; background-color: #292e34;">/*</span><span style="color: #2aa1ae; background-color: #292e34;">AUTOARG*/</span>
+             <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Outputs</span>
+             rand_o,
+             <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Inputs</span>
+             clk_i, rst_i
+             <span style="color: #4f97d7;">)</span> ;
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span> clk_i;
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span> rst_i;
+   <span style="color: #ce537a; font-weight: bold;">output</span> <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> rand_o;
+
+   <span style="color: #ce537a; font-weight: bold;">wire</span>              feedback_w;
+
+   <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>         rand_r;
+
+   <span style="color: #4f97d7; font-weight: bold;">always</span> <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">posedge</span> clk_i<span style="color: #4f97d7;">)</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+      <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span>rst_i<span style="color: #4f97d7;">)</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+         rand_r &lt;= <span style="color: #a45bad;">8</span>'hFF;
+      <span style="color: #ffa500; font-weight: bold;">end</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+         rand_r &lt;= <span style="color: #4f97d7;">{</span>rand_r<span style="color: #bc6ec5;">[</span><span style="color: #a45bad;">6</span>:<span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">]</span>, feedback_w<span style="color: #4f97d7;">}</span>;
+      <span style="color: #ffa500; font-weight: bold;">end</span>
+   <span style="color: #ffa500; font-weight: bold;">end</span>
+
+   <span style="color: #4f97d7; font-weight: bold;">assign</span> feedback_w = rand_r<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span><span style="color: #4f97d7;">]</span> ^ rand_r<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">5</span><span style="color: #4f97d7;">]</span>  ^ rand_r<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">4</span><span style="color: #4f97d7;">]</span>  ^ rand_r<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">3</span><span style="color: #4f97d7;">]</span>;
+   <span style="color: #4f97d7; font-weight: bold;">assign</span> rand_o = rand_r;
+<span style="color: #4f97d7; font-weight: bold;">endmodule</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">lfsr</span>
+</pre>
+</div>
+
+<p>
+sin_lut.v
+</p>
+<div class="org-src-container">
+<pre class="src src-verilog"><span style="color: #4f97d7; font-weight: bold;">module</span> <span style="color: #bc6ec5; font-weight: bold;">sine_lut</span> <span style="color: #4f97d7;">(</span><span style="color: #2aa1ae; background-color: #292e34;">/*</span><span style="color: #2aa1ae; background-color: #292e34;">AUTOARG*/</span>
+                 <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Outputs</span>
+                 sine_o,
+                 <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Inputs</span>
+                 address_i
+                 <span style="color: #4f97d7;">)</span> ;
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> address_i;
+   <span style="color: #ce537a; font-weight: bold;">output</span> <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> sine_o;
+
+   <span style="color: #4f97d7; font-weight: bold;">always</span> <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span>*<span style="color: #4f97d7;">)</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+      <span style="color: #4f97d7; font-weight: bold;">case</span> <span style="color: #4f97d7;">(</span>address_i<span style="color: #4f97d7;">)</span>
+         <span style="color: #a45bad;">8</span>'b00000000: sine_o = <span style="color: #a45bad;">8</span>'b10000000;
+         <span style="color: #a45bad;">8</span>'b00000001: sine_o = <span style="color: #a45bad;">8</span>'b10000011;
+         <span style="color: #a45bad;">8</span>'b00000010: sine_o = <span style="color: #a45bad;">8</span>'b10000110;
+         <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">Cut for the sake of printing...</span>
+         <span style="color: #a45bad;">8</span>'b11111111: sine_o = <span style="color: #a45bad;">8</span>'b01111101;
+      <span style="color: #4f97d7; font-weight: bold;">endcase</span>
+   <span style="color: #ffa500; font-weight: bold;">end</span>
+<span style="color: #4f97d7; font-weight: bold;">endmodule</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">sine_lut</span>
+</pre>
+</div>
+
+<p>
+saw_lut.v
+</p>
+<div class="org-src-container">
+<pre class="src src-verilog"><span style="color: #4f97d7; font-weight: bold;">module</span> <span style="color: #bc6ec5; font-weight: bold;">saw_lut</span> <span style="color: #4f97d7;">(</span><span style="color: #2aa1ae; background-color: #292e34;">/*</span><span style="color: #2aa1ae; background-color: #292e34;">AUTOARG*/</span>
+                <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Outputs</span>
+                saw_o,
+                <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Inputs</span>
+                address_i
+                <span style="color: #4f97d7;">)</span> ;
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> address_i;
+   <span style="color: #ce537a; font-weight: bold;">output</span> <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> saw_o;
+
+   <span style="color: #4f97d7; font-weight: bold;">always</span> <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span>*<span style="color: #4f97d7;">)</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+      <span style="color: #4f97d7; font-weight: bold;">case</span><span style="color: #4f97d7;">(</span>address_i<span style="color: #4f97d7;">)</span>
+         <span style="color: #a45bad;">8</span>'b00000000: saw_o = <span style="color: #a45bad;">8</span>'b00000000;
+         <span style="color: #a45bad;">8</span>'b00000001: saw_o = <span style="color: #a45bad;">8</span>'b00000001;
+         <span style="color: #a45bad;">8</span>'b00000010: saw_o = <span style="color: #a45bad;">8</span>'b00000010;
+         <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">Cut for the sake of printing...</span>
+         <span style="color: #a45bad;">8</span>'b11111111: saw_o = <span style="color: #a45bad;">8</span>'b11111111;
+      <span style="color: #4f97d7; font-weight: bold;">endcase</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">case (address_i)</span>
+   <span style="color: #ffa500; font-weight: bold;">end</span>
+<span style="color: #4f97d7; font-weight: bold;">endmodule</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">saw_lut</span>
+</pre>
+</div>
+
+<p>
+tri_lut.v
+</p>
+<div class="org-src-container">
+<pre class="src src-verilog"><span style="color: #4f97d7; font-weight: bold;">module</span> <span style="color: #bc6ec5; font-weight: bold;">tri_lut</span> <span style="color: #4f97d7;">(</span><span style="color: #2aa1ae; background-color: #292e34;">/*</span><span style="color: #2aa1ae; background-color: #292e34;">AUTOARG*/</span>
+                <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Outputs</span>
+                tri_o,
+                <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Inputs</span>
+                address_i
+                <span style="color: #4f97d7;">)</span> ;
+   <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> address_i;
+   <span style="color: #ce537a; font-weight: bold;">output</span> <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> tri_o;
+
+   <span style="color: #4f97d7; font-weight: bold;">always</span> <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span>*<span style="color: #4f97d7;">)</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+      <span style="color: #4f97d7; font-weight: bold;">case</span><span style="color: #4f97d7;">(</span>address_i<span style="color: #4f97d7;">)</span>
+         <span style="color: #a45bad;">8</span>'b00000000: tri_o = <span style="color: #a45bad;">8</span>'b10000000;
+         <span style="color: #a45bad;">8</span>'b00000001: tri_o = <span style="color: #a45bad;">8</span>'b10000010;
+         <span style="color: #a45bad;">8</span>'b00000010: tri_o = <span style="color: #a45bad;">8</span>'b10000100;
+         <span style="color: #a45bad;">8</span>'b00000011: tri_o = <span style="color: #a45bad;">8</span>'b10000110;
+         <span style="color: #a45bad;">8</span>'b00000100: tri_o = <span style="color: #a45bad;">8</span>'b10001000;
+         <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">Cut for the sake of printing...</span>
+         <span style="color: #a45bad;">8</span>'b11111111: tri_o = <span style="color: #a45bad;">8</span>'b01111110;
+      <span style="color: #4f97d7; font-weight: bold;">endcase</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">case (address_i)</span>
+   <span style="color: #ffa500; font-weight: bold;">end</span>
+<span style="color: #4f97d7; font-weight: bold;">endmodule</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">tri_lut</span>
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-orgad970dc" class="outline-3">
+<h3 id="orgad970dc"><span class="section-number-3">11.2.</span> TB</h3>
+<div class="outline-text-3" id="text-11-2">
+<p>
+lfsr_tb.v
+</p>
+<div class="org-src-container">
+<pre class="src src-verilog"><span style="color: #4f97d7; font-weight: bold;">module</span> <span style="color: #bc6ec5; font-weight: bold;">lfsr_tb</span> <span style="color: #4f97d7;">(</span><span style="color: #2aa1ae; background-color: #292e34;">/*</span><span style="color: #2aa1ae; background-color: #292e34;">AUTOARG*/</span><span style="color: #4f97d7;">)</span> ;
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> TRACE = <span style="color: #a45bad;">1</span>;
+
+   <span style="color: #ce537a; font-weight: bold;">reg</span> clk_i_tb;
+   <span style="color: #ce537a; font-weight: bold;">reg</span> rst_i_tb;
+   <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> rand_o_tb;
+
+
+   lfsr <span style="color: #bc6ec5; font-weight: bold;">lfsr0</span><span style="color: #4f97d7;">(</span><span style="color: #2aa1ae; background-color: #292e34;">/*</span><span style="color: #2aa1ae; background-color: #292e34;">AUTOINST*/</span>
+              <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Outputs</span>
+              .<span style="color: #bc6ec5; font-weight: bold;">rand_o</span>                   <span style="color: #bc6ec5;">(</span>rand_o_tb<span style="color: #bc6ec5;">)</span>,
+              <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Inputs</span>
+              .<span style="color: #bc6ec5; font-weight: bold;">clk_i</span>                    <span style="color: #bc6ec5;">(</span>clk_i_tb<span style="color: #bc6ec5;">)</span>,
+              .<span style="color: #bc6ec5; font-weight: bold;">rst_i</span>                    <span style="color: #bc6ec5;">(</span>rst_i_tb<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>;
+
+   <span style="color: #4f97d7; font-weight: bold;">initial</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+      clk_i_tb     = <span style="color: #a45bad;">0</span>;
+      rst_i_tb     = <span style="color: #a45bad;">0</span>;
+     <span style="color: #ce537a; font-weight: bold;"> #</span><span style="color: #a45bad; font-weight: bold;">10</span> rst_i_tb = <span style="color: #a45bad;">1</span>;
+     <span style="color: #ce537a; font-weight: bold;"> #</span><span style="color: #a45bad; font-weight: bold;">10</span> rst_i_tb = <span style="color: #a45bad;">0</span>;
+     <span style="color: #ce537a; font-weight: bold;"> #</span><span style="color: #a45bad; font-weight: bold;">10000</span> <span style="color: #4f97d7; font-weight: bold;">$finish</span>;
+   <span style="color: #ffa500; font-weight: bold;">end</span>
+
+   <span style="color: #4f97d7; font-weight: bold;">initial</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+      <span style="color: #4f97d7; font-weight: bold;">forever</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+        <span style="color: #ce537a; font-weight: bold;"> #</span><span style="color: #a45bad; font-weight: bold;">10</span> clk_i_tb = ~clk_i_tb;
+      <span style="color: #ffa500; font-weight: bold;">end</span>
+   <span style="color: #ffa500; font-weight: bold;">end</span>
+
+
+   <span style="color: #4f97d7; font-weight: bold;">always</span> <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">posedge</span> clk_i_tb<span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"Current Value of Random Out:%d %h"</span>, rand_o_tb, rand_o_tb<span style="color: #4f97d7;">)</span>;
+
+   <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span>TRACE == <span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">initial</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+      <span style="color: #4f97d7; font-weight: bold;">$dumpfile</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"../out/wave_lfsr.vcd"</span><span style="color: #4f97d7;">)</span>;
+      <span style="color: #4f97d7; font-weight: bold;">$dumpvars</span>;
+   <span style="color: #ffa500; font-weight: bold;">end</span>
+
+<span style="color: #4f97d7; font-weight: bold;">endmodule</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">lfsr_tb</span>
+</pre>
+</div>
+
+<p>
+simple_dds_tb.v
+</p>
+<div class="org-src-container">
+<pre class="src src-verilog"><span style="color: #4f97d7; font-weight: bold;">module</span> <span style="color: #bc6ec5; font-weight: bold;">simple_dds_tb</span> <span style="color: #4f97d7;">()</span>;
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> SEED = <span style="color: #a45bad;">100</span>;
+   <span style="color: #ce537a; font-weight: bold;">integer</span> seed = SEED;
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> TRACE = <span style="color: #a45bad;">1</span>;
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> TIMEOUT = <span style="color: #a45bad;">50000</span>;
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> WB_CLOCK_PERIOD = <span style="color: #a45bad;">100</span>;
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> WB_CLOCK_HALF_PERIOD = WB_CLOCK_PERIOD / <span style="color: #a45bad;">2</span>;
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> DDS_CLOCK_PERIOD = <span style="color: #a45bad;">10</span>;
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> DDS_CLOCK_HALF_PERIOD = DDS_CLOCK_PERIOD / <span style="color: #a45bad;">2</span>;
+
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> DATA_WIDTH = <span style="color: #a45bad;">32</span>;
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> ADDR_WIDTH = <span style="color: #a45bad;">16</span>;
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> WAVE_WIDTH = <span style="color: #a45bad;">16</span>;
+
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Register Address Definitions</span>
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> READY = <span style="color: #a45bad;">32</span>'d0,
+      ENABLE      = <span style="color: #a45bad;">32</span>'d1,
+      DDS_SRC     = <span style="color: #a45bad;">32</span>'d2,
+      TUNING_WORD = <span style="color: #a45bad;">32</span>'d3,
+      GAIN_WORD   = <span style="color: #a45bad;">32</span>'d4,
+      OFFSET_WORD = <span style="color: #a45bad;">32</span>'d5;
+
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Register Reset Values</span>
+   <span style="color: #ce537a; font-weight: bold;">parameter</span> READY_RST_VAL = <span style="color: #a45bad;">32</span>'d0,
+      ENABLE_RST_VAL = <span style="color: #a45bad;">32</span>'d0,
+      DDS_SRC_RST_VAL = <span style="color: #a45bad;">32</span>'d0,
+      TUNING_WORD_RST_VAL = <span style="color: #a45bad;">32</span>'d1,
+      GAIN_WORD_RST_VAL = <span style="color: #a45bad;">32</span>'d0,
+      OFFSET_WORD_RST_VAL = <span style="color: #a45bad;">32</span>'h000000FF;
+
+
+   <span style="color: #ce537a; font-weight: bold;">reg</span>     wb_clk_i_tb;
+   <span style="color: #ce537a; font-weight: bold;">reg</span>     wb_rst_i_tb;
+   <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span>DATA_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> wb_dat_i_tb;
+   <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span>ADDR_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> wb_addr_i_tb;
+   <span style="color: #ce537a; font-weight: bold;">reg</span>                  wb_we_i_tb;
+   <span style="color: #ce537a; font-weight: bold;">reg</span>                  wb_stb_i_tb;
+
+   <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span>DATA_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> wb_dat_o_tb;
+   <span style="color: #ce537a; font-weight: bold;">wire</span>                  wb_ack_o_tb;
+
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Misc IO signals</span>
+   <span style="color: #ce537a; font-weight: bold;">reg</span>                   dds_clk_i_tb;
+
+   <span style="color: #ce537a; font-weight: bold;">wire</span> <span style="color: #4f97d7;">[</span>WAVE_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> wave_o_tb;
+
+
+   simple_dds #<span style="color: #4f97d7;">(</span>.<span style="color: #bc6ec5; font-weight: bold;">DATA_WIDTH</span><span style="color: #bc6ec5;">(</span>DATA_WIDTH<span style="color: #bc6ec5;">)</span>, .<span style="color: #bc6ec5; font-weight: bold;">ADDR_WIDTH</span><span style="color: #bc6ec5;">(</span>ADDR_WIDTH<span style="color: #bc6ec5;">)</span>, .<span style="color: #bc6ec5; font-weight: bold;">WAVE_WIDTH</span><span style="color: #bc6ec5;">(</span>WAVE_WIDTH<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+   <span style="color: #bc6ec5; font-weight: bold;">dut0</span><span style="color: #4f97d7;">(</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Outputs</span>
+        .<span style="color: #bc6ec5; font-weight: bold;">wb_dat_o</span>            <span style="color: #bc6ec5;">(</span>wb_dat_o_tb<span style="color: #bc6ec5;">)</span>,
+        .<span style="color: #bc6ec5; font-weight: bold;">wb_ack_o</span>            <span style="color: #bc6ec5;">(</span>wb_ack_o_tb<span style="color: #bc6ec5;">)</span>,
+        .<span style="color: #bc6ec5; font-weight: bold;">wave_o</span>              <span style="color: #bc6ec5;">(</span>wave_o_tb<span style="color: #bc6ec5;">)</span>,
+        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Inputs</span>
+        .<span style="color: #bc6ec5; font-weight: bold;">wb_clk_i</span>            <span style="color: #bc6ec5;">(</span>wb_clk_i_tb<span style="color: #bc6ec5;">)</span>,
+        .<span style="color: #bc6ec5; font-weight: bold;">wb_rst_i</span>            <span style="color: #bc6ec5;">(</span>wb_rst_i_tb<span style="color: #bc6ec5;">)</span>,
+        .<span style="color: #bc6ec5; font-weight: bold;">wb_dat_i</span>            <span style="color: #bc6ec5;">(</span>wb_dat_i_tb<span style="color: #bc6ec5;">)</span>,
+        .<span style="color: #bc6ec5; font-weight: bold;">wb_addr_i</span>           <span style="color: #bc6ec5;">(</span>wb_addr_i_tb<span style="color: #bc6ec5;">)</span>,
+        .<span style="color: #bc6ec5; font-weight: bold;">wb_we_i</span>             <span style="color: #bc6ec5;">(</span>wb_we_i_tb<span style="color: #bc6ec5;">)</span>,
+        .<span style="color: #bc6ec5; font-weight: bold;">wb_stb_i</span>            <span style="color: #bc6ec5;">(</span>wb_stb_i_tb<span style="color: #bc6ec5;">)</span>,
+        .<span style="color: #bc6ec5; font-weight: bold;">dds_clk_i</span>           <span style="color: #bc6ec5;">(</span>dds_clk_i_tb<span style="color: #bc6ec5;">)</span>
+        <span style="color: #4f97d7;">)</span>;
+
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Wave Dump</span>
+   <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span>TRACE == <span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">initial</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+      <span style="color: #4f97d7; font-weight: bold;">$dumpfile</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"../out/wave_simple_dds.vcd"</span><span style="color: #4f97d7;">)</span>;
+      <span style="color: #4f97d7; font-weight: bold;">$dumpvars</span>;
+   <span style="color: #ffa500; font-weight: bold;">end</span>
+
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Watchdog Timeout</span>
+   <span style="color: #4f97d7; font-weight: bold;">initial</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+     <span style="color: #ce537a; font-weight: bold;"> #TIMEOUT</span> <span style="color: #4f97d7; font-weight: bold;">$finish</span>;
+   <span style="color: #ffa500; font-weight: bold;">end</span>
+
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">DDS Clock Generator</span>
+   <span style="color: #4f97d7; font-weight: bold;">initial</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+      <span style="color: #4f97d7; font-weight: bold;">forever</span><span style="color: #ce537a; font-weight: bold;"> #DDS_CLOCK_HALF_PERIOD</span> dds_clk_i_tb = ~dds_clk_i_tb;
+   <span style="color: #ffa500; font-weight: bold;">end</span>
+
+   <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">// WB Clock Generator</span>
+   <span style="color: #4f97d7; font-weight: bold;">initial</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+      <span style="color: #4f97d7; font-weight: bold;">forever</span><span style="color: #ce537a; font-weight: bold;"> #WB_CLOCK_HALF_PERIOD</span> wb_clk_i_tb = ~wb_clk_i_tb;
+   <span style="color: #ffa500; font-weight: bold;">end</span>
+
+   <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span>DATA_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> read_data;
+   <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span>ADDR_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span> read_addr;
+
+   <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">DUT Random Register Values</span>
+   <span style="color: #ce537a; font-weight: bold;">reg</span>                  enable_tb;
+   <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>            dds_src_tb;
+   <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>            tuning_word_tb;
+   <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>            gain_word_tb;
+   <span style="color: #ce537a; font-weight: bold;">reg</span> <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">15</span>:<span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>           offset_word_tb;
+
+   <span style="color: #ce537a; font-weight: bold;">integer</span>              sample_cntr;
+   <span style="color: #4f97d7; font-weight: bold;">initial</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+      <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO: Testing Register Writes"</span><span style="color: #4f97d7;">)</span>;
+      <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Initial Values for Registers-----------------</span>
+      wb_clk_i_tb  = <span style="color: #a45bad;">0</span>;
+      wb_rst_i_tb  = <span style="color: #a45bad;">0</span>;
+      wb_dat_i_tb  = <span style="color: #a45bad;">0</span>;
+      wb_addr_i_tb = <span style="color: #a45bad;">0</span>;
+      wb_we_i_tb   = <span style="color: #a45bad;">0</span>;
+      wb_stb_i_tb  = <span style="color: #a45bad;">0</span>;
+      dds_clk_i_tb = <span style="color: #a45bad;">0</span>;
+
+      read_data    = <span style="color: #a45bad;">0</span>;
+      read_addr    = <span style="color: #a45bad;">0</span>;
+
+      <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Reset DUT------------------------------------</span>
+      <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">negedge</span> wb_clk_i_tb<span style="color: #4f97d7;">)</span>;
+      wb_rst_i_tb = <span style="color: #a45bad;">1</span>;
+      <span style="color: #4f97d7; font-weight: bold;">repeat</span> <span style="color: #4f97d7;">(</span><span style="color: #a45bad;">5</span><span style="color: #4f97d7;">)</span> <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">posedge</span> wb_clk_i_tb<span style="color: #4f97d7;">)</span>;
+      wb_rst_i_tb = <span style="color: #a45bad;">0</span>;
+      <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">posedge</span> wb_clk_i_tb<span style="color: #4f97d7;">)</span>;
+      <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Test Register R/W----------------------------</span>
+      <span style="color: #bc6ec5; font-weight: bold;">randomize_test</span><span style="color: #4f97d7;">()</span>;
+      <span style="color: #bc6ec5; font-weight: bold;">run_reg_test</span><span style="color: #4f97d7;">()</span>;
+      <span style="color: #bc6ec5; font-weight: bold;">run_wave_test</span><span style="color: #4f97d7;">()</span>;
+     <span style="color: #ce537a; font-weight: bold;"> #</span><span style="color: #a45bad; font-weight: bold;">1000</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO: Test Complete"</span><span style="color: #4f97d7;">)</span>;
+      <span style="color: #4f97d7; font-weight: bold;">$finish</span>;
+   <span style="color: #ffa500; font-weight: bold;">end</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">initial begin</span>
+
+
+
+   <span style="color: #4f97d7; font-weight: bold;">task</span> <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #bc6ec5;">[</span>ADDR_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">]</span> addr, <span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #bc6ec5;">[</span>DATA_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">]</span> data<span style="color: #4f97d7;">)</span>;
+      <span style="color: #ffa500; font-weight: bold;">begin</span>
+         <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO: WB Writing 0x%h to 0x%h"</span>, data, addr<span style="color: #4f97d7;">)</span>;
+
+         <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">negedge</span> wb_clk_i_tb<span style="color: #4f97d7;">)</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Sync to non sample edge</span>
+         wb_we_i_tb   = <span style="color: #a45bad;">1</span>;
+         wb_addr_i_tb = addr;
+         wb_dat_i_tb  = data;
+         wb_stb_i_tb = <span style="color: #a45bad;">1</span>;
+         <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">posedge</span> wb_clk_i_tb<span style="color: #4f97d7;">)</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Write to the DUT</span>
+         <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">posedge</span> wb_clk_i_tb<span style="color: #4f97d7;">)</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Get an ACK next cycle</span>
+         <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span>wb_ack_o_tb<span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO: WB Wrote 0x%h to 0x%h"</span>, data, addr<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: WB Write %h to 0x%h failed. No ACK"</span>, data, addr<span style="color: #4f97d7;">)</span>; wb_stb_i_tb = <span style="color: #a45bad;">0</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">TR over</span>
+      <span style="color: #ffa500; font-weight: bold;">end</span>
+   <span style="color: #4f97d7; font-weight: bold;">endtask</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">wb_write</span>
+
+   <span style="color: #4f97d7; font-weight: bold;">task</span> <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">input</span> <span style="color: #bc6ec5;">[</span>ADDR_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">]</span> addr, <span style="color: #ce537a; font-weight: bold;">output</span> <span style="color: #bc6ec5;">[</span>DATA_WIDTH-<span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">]</span> data<span style="color: #4f97d7;">)</span>;
+      <span style="color: #ffa500; font-weight: bold;">begin</span>
+         <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO: WB read from 0x%h"</span>, addr<span style="color: #4f97d7;">)</span>;
+
+         <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">negedge</span> wb_clk_i_tb<span style="color: #4f97d7;">)</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Sync to non sample edge</span>
+         wb_we_i_tb   = <span style="color: #a45bad;">0</span>;
+         wb_addr_i_tb = addr;
+         wb_stb_i_tb = <span style="color: #a45bad;">1</span>;
+         <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">posedge</span> wb_clk_i_tb<span style="color: #4f97d7;">)</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Write to the DUT</span>
+         <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">posedge</span> wb_clk_i_tb<span style="color: #4f97d7;">)</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Get an ACK next cycle and read data</span>
+         data = wb_dat_o_tb;
+         <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span>wb_ack_o_tb<span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO: WB read 0x%h from 0x%h"</span>, data, addr<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: WB Read from 0x%h failed. No ACK"</span>, addr<span style="color: #4f97d7;">)</span>;
+         wb_stb_i_tb = <span style="color: #a45bad;">0</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">TR over</span>
+      <span style="color: #ffa500; font-weight: bold;">end</span>
+   <span style="color: #4f97d7; font-weight: bold;">endtask</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">wb_read</span>
+
+   <span style="color: #4f97d7; font-weight: bold;">task</span> <span style="color: #bc6ec5; font-weight: bold;">run_reg_test</span><span style="color: #4f97d7;">()</span>;
+      <span style="color: #ffa500; font-weight: bold;">begin</span>
+
+         <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Ensure DUT Reset Complete and DUT is ready</span>
+         <span style="color: #4f97d7; font-weight: bold;">while</span><span style="color: #4f97d7;">(</span>read_data !== <span style="color: #a45bad;">32</span>'d1<span style="color: #4f97d7;">)</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+            <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span>READY, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #ffa500; font-weight: bold;">end</span>
+
+         <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Read and assert proper reset values</span>
+         <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span>ENABLE, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>!<span style="color: #bc6ec5;">(</span>read_data === ENABLE_RST_VAL<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: ENABLE reset to wrong value: 0x%h"</span>, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span>DDS_SRC, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>!<span style="color: #bc6ec5;">(</span>read_data === DDS_SRC_RST_VAL<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: DDS_SRC reset to wrong value: 0x%h"</span>, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span>TUNING_WORD, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>!<span style="color: #bc6ec5;">(</span>read_data === TUNING_WORD_RST_VAL<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: TUNING_WORD reset to wrong value: 0x%h"</span>, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span>GAIN_WORD, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>!<span style="color: #bc6ec5;">(</span>read_data === GAIN_WORD_RST_VAL<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: GAIN_WORD reset to wrong value: 0x%h"</span>, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span>OFFSET_WORD, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>!<span style="color: #bc6ec5;">(</span>read_data === OFFSET_WORD_RST_VAL<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: OFFSET_WORD reset to wrong value: 0x%h"</span>, read_data<span style="color: #4f97d7;">)</span>;
+
+         <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Set</span>
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>READY, <span style="color: #a45bad;">32</span>'hffff_ffff<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>ENABLE, <span style="color: #a45bad;">32</span>'hffff_ffff<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>DDS_SRC, <span style="color: #a45bad;">32</span>'hffff_ffff<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>TUNING_WORD, <span style="color: #a45bad;">32</span>'hffff_ffff<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>GAIN_WORD, <span style="color: #a45bad;">32</span>'hffff_ffff<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>OFFSET_WORD, <span style="color: #a45bad;">32</span>'hffff_ffff<span style="color: #4f97d7;">)</span>;
+
+         <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Read and assert proper bit fields were set</span>
+         <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span>ENABLE, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>!<span style="color: #bc6ec5;">(</span>read_data<span style="color: #2d9574;">[</span><span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span> === <span style="color: #a45bad;">1</span>'b1<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: ENABLE reset to wrong value: 0x%h"</span>, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span>DDS_SRC, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>!<span style="color: #bc6ec5;">(</span>read_data<span style="color: #2d9574;">[</span><span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span> === <span style="color: #a45bad;">2</span>'b11<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: DDS_SRC reset to wrong value: 0x%h"</span>, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span>TUNING_WORD, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>!<span style="color: #bc6ec5;">(</span>read_data<span style="color: #2d9574;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span> === <span style="color: #a45bad;">8</span>'hff<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: TUNING_WORD reset to wrong value: 0x%h"</span>, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span>GAIN_WORD, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>!<span style="color: #bc6ec5;">(</span>read_data<span style="color: #2d9574;">[</span><span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span> === <span style="color: #a45bad;">2</span>'b11<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: GAIN_WORD reset to wrong value: 0x%h"</span>, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span>OFFSET_WORD, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>!<span style="color: #bc6ec5;">(</span>read_data<span style="color: #2d9574;">[</span><span style="color: #a45bad;">15</span>:<span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span> === <span style="color: #a45bad;">16</span>'hffff<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: OFFSET_WORD reset to wrong value: 0x%h"</span>, read_data<span style="color: #4f97d7;">)</span>;
+
+         <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Clear</span>
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>READY, <span style="color: #a45bad;">32</span>'d0<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>ENABLE, <span style="color: #a45bad;">32</span>'d0<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>DDS_SRC, <span style="color: #a45bad;">32</span>'d0<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>TUNING_WORD, <span style="color: #a45bad;">32</span>'d0<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>GAIN_WORD, <span style="color: #a45bad;">32</span>'d0<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>OFFSET_WORD, <span style="color: #a45bad;">32</span>'d0<span style="color: #4f97d7;">)</span>;
+
+         <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Read and assert proper bit fields were cleared</span>
+         <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span>ENABLE, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>!<span style="color: #bc6ec5;">(</span>read_data<span style="color: #2d9574;">[</span><span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span> === <span style="color: #a45bad;">1</span>'b0<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: ENABLE reset to wrong value: 0x%h"</span>, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span>DDS_SRC, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>!<span style="color: #bc6ec5;">(</span>read_data<span style="color: #2d9574;">[</span><span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span> === <span style="color: #a45bad;">2</span>'b00<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: DDS_SRC reset to wrong value: 0x%h"</span>, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span>TUNING_WORD, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>!<span style="color: #bc6ec5;">(</span>read_data<span style="color: #2d9574;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span> === <span style="color: #a45bad;">8</span>'h00<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: TUNING_WORD reset to wrong value: 0x%h"</span>, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span>GAIN_WORD, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>!<span style="color: #bc6ec5;">(</span>read_data<span style="color: #2d9574;">[</span><span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span> === <span style="color: #a45bad;">2</span>'b00<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: GAIN_WORD reset to wrong value: 0x%h"</span>, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_read</span><span style="color: #4f97d7;">(</span>OFFSET_WORD, read_data<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">if</span><span style="color: #4f97d7;">(</span>!<span style="color: #bc6ec5;">(</span>read_data<span style="color: #2d9574;">[</span><span style="color: #a45bad;">15</span>:<span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span> === <span style="color: #a45bad;">16</span>'h0000<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"ERROR: OFFSET_WORD reset to wrong value: 0x%h"</span>, read_data<span style="color: #4f97d7;">)</span>;
+      <span style="color: #ffa500; font-weight: bold;">end</span>
+   <span style="color: #4f97d7; font-weight: bold;">endtask</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">run_reg_test</span>
+
+
+   <span style="color: #ce537a; font-weight: bold;">integer</span> rand_1;
+   <span style="color: #ce537a; font-weight: bold;">integer</span> rand_2;
+   <span style="color: #4f97d7; font-weight: bold;">task</span> <span style="color: #bc6ec5; font-weight: bold;">randomize_test</span><span style="color: #4f97d7;">()</span>;
+      <span style="color: #ffa500; font-weight: bold;">begin</span>
+         <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Randomize Test Environment and Print It To Log</span>
+         rand_1         = <span style="color: #4f97d7; font-weight: bold;">$urandom</span><span style="color: #4f97d7;">(</span>seed<span style="color: #4f97d7;">)</span>;
+         rand_2         = <span style="color: #4f97d7; font-weight: bold;">$urandom</span><span style="color: #4f97d7;">(</span>seed<span style="color: #4f97d7;">)</span>;
+         <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">dds_src_tb     = {30'd0, rand_1[1:0]};</span>
+         <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">tuning_word_tb = {24'd0, rand_2[23:16]};</span>
+         <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">gain_word_tb   = {30'd0, rand_1[3:2]};</span>
+         <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">offset_word_tb = {16'd0, rand_2[15:0]};</span>
+
+         <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Temp Overrides</span>
+         dds_src_tb     = <span style="color: #4f97d7;">{</span><span style="color: #a45bad;">30</span>'d0, <span style="color: #a45bad;">2</span>'b00<span style="color: #4f97d7;">}</span>;
+         tuning_word_tb = <span style="color: #4f97d7;">{</span><span style="color: #a45bad;">24</span>'d0, <span style="color: #a45bad;">7</span>'h01<span style="color: #4f97d7;">}</span>;
+         gain_word_tb   = <span style="color: #4f97d7;">{</span><span style="color: #a45bad;">30</span>'d0, <span style="color: #a45bad;">2</span>'b00<span style="color: #4f97d7;">}</span>;
+         offset_word_tb = <span style="color: #a45bad;">16</span>'h7fff;
+
+         <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"---------------------------------------------------------------------------"</span><span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">case</span><span style="color: #4f97d7;">(</span>dds_src_tb<span style="color: #bc6ec5;">[</span><span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">)</span>
+            <span style="color: #a45bad;">2</span>'b00 : <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO: DDS_SRC: SINE"</span><span style="color: #4f97d7;">)</span>;
+            <span style="color: #a45bad;">2</span>'b01 : <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO: DDS_SRC: SAW"</span><span style="color: #4f97d7;">)</span>;
+            <span style="color: #a45bad;">2</span>'b10 : <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO: DDS_SRC: TRI"</span><span style="color: #4f97d7;">)</span>;
+            <span style="color: #a45bad;">2</span>'b11 : <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO: DDS_SRC: RAND"</span><span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">endcase</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">case (dds_src_tb[1:0])</span>
+         <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO: TUNING_WORD 0x%h"</span>, tuning_word_tb<span style="color: #bc6ec5;">[</span><span style="color: #a45bad;">7</span>:<span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">case</span><span style="color: #4f97d7;">(</span>gain_word_tb<span style="color: #bc6ec5;">[</span><span style="color: #a45bad;">1</span>:<span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">)</span>
+            <span style="color: #a45bad;">2</span>'b00 : <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO GAIN_WORD: x1"</span><span style="color: #4f97d7;">)</span>;
+            <span style="color: #a45bad;">2</span>'b01 : <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO GAIN_WORD: x2"</span><span style="color: #4f97d7;">)</span>;
+            <span style="color: #a45bad;">2</span>'b10 : <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO GAIN_WORD: x4"</span><span style="color: #4f97d7;">)</span>;
+            <span style="color: #a45bad;">2</span>'b11 : <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO GAIN_WORD: x8"</span><span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">endcase</span>
+         <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO: OFFSET_WORD 0x%h"</span>, offset_word_tb<span style="color: #bc6ec5;">[</span><span style="color: #a45bad;">15</span>:<span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"---------------------------------------------------------------------------"</span><span style="color: #4f97d7;">)</span>;
+      <span style="color: #ffa500; font-weight: bold;">end</span>
+   <span style="color: #4f97d7; font-weight: bold;">endtask</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">randomize_test</span>
+
+   <span style="color: #4f97d7; font-weight: bold;">task</span> <span style="color: #bc6ec5; font-weight: bold;">run_wave_test</span><span style="color: #4f97d7;">()</span>;
+      <span style="color: #ffa500; font-weight: bold;">begin</span>
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>DDS_SRC, dds_src_tb<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>TUNING_WORD, tuning_word_tb<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>GAIN_WORD, gain_word_tb<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>OFFSET_WORD, offset_word_tb<span style="color: #4f97d7;">)</span>;
+         <span style="color: #bc6ec5; font-weight: bold;">wb_write</span><span style="color: #4f97d7;">(</span>ENABLE, <span style="color: #a45bad;">32</span>'d1<span style="color: #4f97d7;">)</span>;
+         <span style="color: #4f97d7; font-weight: bold;">for</span><span style="color: #4f97d7;">(</span>sample_cntr = <span style="color: #a45bad;">0</span>; sample_cntr &lt; <span style="color: #a45bad;">500</span> ; sample_cntr++<span style="color: #4f97d7;">)</span> <span style="color: #ffa500; font-weight: bold;">begin</span>
+            <span style="color: #ce537a; font-weight: bold;">@</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">posedge</span> dds_clk_i_tb<span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">$display</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"INFO: sample:%d value:%d"</span>, sample_cntr, wave_o_tb<span style="color: #4f97d7;">)</span>;
+         <span style="color: #ffa500; font-weight: bold;">end</span>
+      <span style="color: #ffa500; font-weight: bold;">end</span>
+   <span style="color: #4f97d7; font-weight: bold;">endtask</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">run_test</span>
+
+<span style="color: #4f97d7; font-weight: bold;">endmodule</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">simple_dds_tb</span>
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org4f7d718" class="outline-3">
+<h3 id="org4f7d718"><span class="section-number-3">11.3.</span> Python</h3>
+<div class="outline-text-3" id="text-11-3">
+<p>
+plot_results.py
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #2aa1ae; background-color: #292e34;">#</span><span style="color: #2aa1ae; background-color: #292e34;">!/bin/usr/python3</span>
+
+<span style="color: #4f97d7; font-weight: bold;">import</span> re
+<span style="color: #4f97d7; font-weight: bold;">import</span> glob
+<span style="color: #4f97d7; font-weight: bold;">import</span> os
+<span style="color: #4f97d7; font-weight: bold;">from</span> matplotlib <span style="color: #4f97d7; font-weight: bold;">import</span> pyplot <span style="color: #4f97d7; font-weight: bold;">as</span> plt
+
+<span style="color: #7590db;">values</span> = <span style="color: #4f97d7;">[]</span>
+<span style="color: #7590db;">list_of_files</span> = glob.glob<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/home/patrick/ws/school/verilog_and_vhdl/simple_dds/sim/rtl_sim/log/simple_dds*'</span><span style="color: #4f97d7;">)</span> <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">* means all if need specific format then *.csv</span>
+<span style="color: #7590db;">latest_file</span> = <span style="color: #4f97d7;">max</span><span style="color: #4f97d7;">(</span>list_of_files, key=os.path.getctime<span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">print</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"Graphing "</span> + latest_file<span style="color: #4f97d7;">)</span>
+
+
+<span style="color: #7590db;">regex</span> = re.<span style="color: #4f97d7;">compile</span><span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"value:.*"</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">with</span> <span style="color: #4f97d7;">open</span><span style="color: #4f97d7;">(</span>latest_file<span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">as</span> f:
+    <span style="color: #4f97d7; font-weight: bold;">for</span> line <span style="color: #4f97d7; font-weight: bold;">in</span> f:
+        <span style="color: #7590db;">result</span> = regex.search<span style="color: #4f97d7;">(</span>line<span style="color: #4f97d7;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">if</span> result <span style="color: #4f97d7; font-weight: bold;">is</span> <span style="color: #4f97d7; font-weight: bold;">not</span> <span style="color: #a45bad;">None</span>:
+            <span style="color: #4f97d7; font-weight: bold;">print</span><span style="color: #4f97d7;">(</span>result.group<span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+            <span style="color: #4f97d7; font-weight: bold;">print</span><span style="color: #4f97d7;">(</span>result.group<span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)[</span><span style="color: #a45bad;">6</span>:<span style="color: #bc6ec5;">]</span>.lstrip<span style="color: #bc6ec5;">()</span><span style="color: #4f97d7;">)</span>
+            values.append<span style="color: #4f97d7;">(</span><span style="color: #4f97d7;">int</span><span style="color: #bc6ec5;">(</span>result.group<span style="color: #2d9574;">(</span><span style="color: #a45bad;">0</span><span style="color: #2d9574;">)[</span><span style="color: #a45bad;">6</span>:<span style="color: #2d9574;">]</span>.lstrip<span style="color: #2d9574;">()</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+
+
+plt.plot<span style="color: #4f97d7;">(</span>values<span style="color: #4f97d7;">)</span>
+plt.xlabel<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"Sample"</span><span style="color: #4f97d7;">)</span>
+plt.ylabel<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"Value"</span><span style="color: #4f97d7;">)</span>
+plt.title<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"Simple DDS Output"</span><span style="color: #4f97d7;">)</span>
+plt.savefig<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"plot.png"</span><span style="color: #4f97d7;">)</span>
+plt.show<span style="color: #4f97d7;">()</span>
+</pre>
+</div>
+</div>
+</div>
+<div id="outline-container-org9cb552e" class="outline-3">
+<h3 id="org9cb552e"><span class="section-number-3">11.4.</span> Makefile</h3>
+<div class="outline-text-3" id="text-11-4">
+<p>
+Makefile
+</p>
+<div class="org-src-container">
+<pre class="src src-makefile"><span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">Makefile for the simple_dds core. Handles testbench and linting.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">Author: Patrick Hoey</span>
+
+
+<span style="color: #7590db;">SHELL</span>=bash
+<span style="color: #7590db;">CC</span>=iverilog
+<span style="color: #7590db;">CCR</span>=vvp
+
+<span style="color: #7590db;">RTL_FOLDER</span>=$<span style="color: #4f97d7;">(</span><span style="color: #7590db;">shell</span> cd ../../rtl/verilog; pwd<span style="color: #4f97d7;">)</span>
+<span style="color: #7590db;">TB_FOLDER</span>=$<span style="color: #4f97d7;">(</span><span style="color: #7590db;">shell</span> cd ./src; pwd<span style="color: #4f97d7;">)</span>
+<span style="color: #7590db;">SW_FOLDER</span>=$<span style="color: #4f97d7;">(</span><span style="color: #7590db;">shell</span> cd ../../sw; pwd<span style="color: #4f97d7;">)</span>
+
+
+<span style="color: #bc6ec5; font-weight: bold;">all</span>: simple_dds
+
+<span style="color: #bc6ec5; font-weight: bold;">lint_all</span>: lint_simple_dds
+
+<span style="color: #bc6ec5; font-weight: bold;">lint_simple_dds</span>:
+@verilator --lint-only --Wall $<span style="color: #4f97d7;">(</span><span style="color: #7590db;">RTL_FOLDER</span><span style="color: #4f97d7;">)</span>/simple_dds &amp;&amp; echo <span style="color: #2d9574;">"LINT: OK"</span>
+
+<span style="color: #bc6ec5; font-weight: bold;">simple_dds</span>:
+@$<span style="color: #4f97d7;">(</span><span style="color: #7590db;">CC</span><span style="color: #4f97d7;">)</span> -o ./run/simple_dds.tb $<span style="color: #4f97d7;">(</span><span style="color: #7590db;">TB_FOLDER</span><span style="color: #4f97d7;">)</span>/simple_dds_tb.v $<span style="color: #4f97d7;">(</span><span style="color: #7590db;">RTL_FOLDER</span><span style="color: #4f97d7;">)</span>/simple_dds.v $<span style="color: #4f97d7;">(</span><span style="color: #7590db;">RTL_FOLDER</span><span style="color: #4f97d7;">)</span>/dds_core.v $<span style="color: #4f97d7;">(</span><span style="color: #7590db;">RTL_FOLDER</span><span style="color: #4f97d7;">)</span>/sine_lut.v $<span style="color: #4f97d7;">(</span><span style="color: #7590db;">RTL_FOLDER</span><span style="color: #4f97d7;">)</span>/tri_lut.v $<span style="color: #4f97d7;">(</span><span style="color: #7590db;">RTL_FOLDER</span><span style="color: #4f97d7;">)</span>/saw_lut.v $<span style="color: #4f97d7;">(</span><span style="color: #7590db;">RTL_FOLDER</span><span style="color: #4f97d7;">)</span>/lfsr.v;
+@cd ./run &amp;&amp; $<span style="color: #4f97d7;">(</span><span style="color: #7590db;">CCR</span><span style="color: #4f97d7;">)</span> simple_dds.tb | tee ../log/simple_dds_log_$$<span style="color: #4f97d7;">(</span>date +%Y%m%d%H%M%S<span style="color: #4f97d7;">)</span>.tb;
+
+<span style="color: #bc6ec5; font-weight: bold;">wave_simple_dds</span>: simple_dds
+@gtkwave out/wave_simple_dds.vcd
+
+<span style="color: #bc6ec5; font-weight: bold;">plot_simple_dds</span>: simple_dds
+@python3 $<span style="color: #4f97d7;">(</span><span style="color: #7590db;">SW_FOLDER</span><span style="color: #4f97d7;">)</span>/plot_results.py
+
+<span style="color: #bc6ec5; font-weight: bold;">lint_lfsr</span>:
+@verilator --lint-only --Wall $<span style="color: #4f97d7;">(</span><span style="color: #7590db;">RTL_FOLDER</span><span style="color: #4f97d7;">)</span>/lfsr &amp;&amp; echo <span style="color: #2d9574;">"LINT: OK"</span>
+
+<span style="color: #bc6ec5; font-weight: bold;">lfsr</span>:
+@$<span style="color: #4f97d7;">(</span><span style="color: #7590db;">CC</span><span style="color: #4f97d7;">)</span> -o ./run/lfsr.tb $<span style="color: #4f97d7;">(</span><span style="color: #7590db;">TB_FOLDER</span><span style="color: #4f97d7;">)</span>/lfsr_tb.v $<span style="color: #4f97d7;">(</span><span style="color: #7590db;">RTL_FOLDER</span><span style="color: #4f97d7;">)</span>/lfsr.v
+@cd ./run &amp;&amp; $<span style="color: #4f97d7;">(</span><span style="color: #7590db;">CCR</span><span style="color: #4f97d7;">)</span> lfsr.tb | tee ../log/lfsr_log_$$<span style="color: #4f97d7;">(</span>date +%Y%m%d%H%M%S<span style="color: #4f97d7;">)</span>.tb;
+
+<span style="color: #bc6ec5; font-weight: bold;">wave_lfsr</span>: lfsr
+@gtkwave out/wave_lfsr.vcd
+
+
+
+<span style="color: #bc6ec5; font-weight: bold;">clean</span>:
+@rm -rf log/*.tb log/*.vcd
+@rm -rf run/*.tb run/*.vcd
+@rm -rf out/*.tb out/*.vcd
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="date">Date: 2022-11-28</p>
+<p class="author">Author: Patrick Hoey</p>
+<p class="date">Created: 2022-12-04 Sun 21:44</p>
+<p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>
