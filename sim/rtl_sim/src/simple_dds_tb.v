@@ -1,5 +1,5 @@
 module simple_dds_tb ();
-   parameter SEED = 100;
+   parameter SEED = 1;
    integer seed = SEED;
    parameter TRACE = 1;
    parameter TIMEOUT = 50000;
@@ -26,7 +26,7 @@ module simple_dds_tb ();
       DDS_SRC_RST_VAL = 32'd0,
       TUNING_WORD_RST_VAL = 32'd1,
       GAIN_WORD_RST_VAL = 32'd0,
-      OFFSET_WORD_RST_VAL = 32'h000000FF;
+      OFFSET_WORD_RST_VAL = 32'h00007FFF;
 
 
    reg wb_clk_i_tb;
@@ -226,16 +226,11 @@ module simple_dds_tb ();
          // Randomize Test Environment and Print It To Log
          rand_1         = $urandom(seed);
          rand_2         = $urandom(seed);
-         //dds_src_tb     = {30'd0, rand_1[1:0]};
-         //tuning_word_tb = {24'd0, rand_2[23:16]};
-         //gain_word_tb   = {30'd0, rand_1[3:2]};
-         //offset_word_tb = {16'd0, rand_2[15:0]};
+         dds_src_tb     = {30'd0, rand_1[1:0]};
+         tuning_word_tb = {24'd0, rand_2[23:16]};
+         gain_word_tb   = {30'd0, rand_1[3:2]};
+         offset_word_tb = {16'd0, rand_2[15:0]};
 
-         // Temp Overrides
-         dds_src_tb     = {30'd0, 2'b00};
-         tuning_word_tb = {24'd0, 7'h01};
-         gain_word_tb   = {30'd0, 2'b00};
-         offset_word_tb = 16'h7fff;
 
          $display("---------------------------------------------------------------------------");
          case(dds_src_tb[1:0])

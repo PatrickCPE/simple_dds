@@ -44,7 +44,6 @@ module simple_dds (/*AUTOARG*/
    // Internal Signals
    //--------------------------------------------------------------------------------------------------------------------------------------------
    // Register Map Signals
-   // TODO add in the seeded version for lfsr
    reg [DATA_WIDTH-1:0]         reg_map_r [5:0]; // Consult Spec for register map
 
    // Observation wires to ensure registers work properly
@@ -62,8 +61,6 @@ module simple_dds (/*AUTOARG*/
    reg                         wb_ack_r;
    wire [WAVE_WIDTH-1:0]        wave_res;
 
-   // Random Number Generator Signals
-   // TODO wire [7:0]                   rand_num;
 
    //--------------------------------------------------------------------------------------------------------------------------------------------
    // Module Instantiations
@@ -85,9 +82,8 @@ module simple_dds (/*AUTOARG*/
    //--------------------------------------------------------------------------------------------------------------------------------------------
    always @ (posedge wb_clk_i) begin
       if(wb_rst_i) begin
-         // TODO reset any internal registers
          wb_ack_r      <= 1'b0;
-         reg_map_r[0]  <= 1; // TODO determine if ready needs some other condition
+         reg_map_r[0]  <= 1;
          reg_map_r[1]  <= 0;
          reg_map_r[2]  <= 0;
          reg_map_r[3]  <= 1;

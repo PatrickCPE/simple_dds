@@ -35,5 +35,4 @@ module lfsr_tb (/*AUTOARG*/) ;
       $dumpvars;
    end
 
-
 endmodule // lfsr_tb
